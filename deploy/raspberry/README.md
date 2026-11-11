@@ -27,7 +27,7 @@ Con Raspberry Pi Imager imposta già nome host (es. `tono`), utente, password, W
 1. Dal PC (PowerShell, nella cartella che contiene il progetto) crea un archivio senza le cartelle pesanti
    e copialo sul Raspberry:
    ```powershell
-   tar -czf tono-raspberry.tar.gz --exclude=node_modules --exclude=.output --exclude=.output.lovable-bak tonecraft-song-studio-main
+   tar -czf tono-raspberry.tar.gz --exclude=node_modules --exclude=.output tonecraft-song-studio-main
    scp tono-raspberry.tar.gz utente@tono.local:~/
    ```
    Sul Raspberry: `tar -xzf tono-raspberry.tar.gz`.
@@ -195,7 +195,7 @@ Attenzione: `docker volume rm tonecraft-db` o `docker compose down -v` **cancell
 
 - `npm run build:server` compila per Node (`NITRO_PRESET=node-server`) con `VITE_DATA_BACKEND=local`:
   il catalogo si legge da PostgreSQL con funzioni server (`src/lib/catalog.functions.ts`) invece che da Supabase.
-  La build normale (`npm run build`, quella di Lovable) resta uguale; il gestionale lì mostra che non è attivo.
+  La build normale (`npm run build`, la versione online) resta uguale; il gestionale lì mostra che non è attivo.
 - `scripts/db-migrate.mjs` applica i file di `drizzle/migrations` una volta sola (tabella `_tono_migrations`).
 - L'immagine dell'app si costruisce dal `Dockerfile` nella cartella principale (build per Node, poi solo `.output`,
   migrazioni e script nell'immagine finale).

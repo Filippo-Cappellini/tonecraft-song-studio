@@ -1,7 +1,6 @@
 # Fuori dall'immagine: dipendenze e build locali, git, password e file di sviluppo.
 node_modules
-.output
-.output.lovable-bak
+.output*
 .git
 .npm
 .wrangler
