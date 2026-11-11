@@ -1,0 +1,83 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792664795313,
+      "tag": "0000_music_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792665805050,
+      "tag": "0001_more_songs",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793199621889,
+      "tag": "0002_hundreds_of_guitars",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793200621889,
+      "tag": "0003_more_drums",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793201621889,
+      "tag": "0004_even_more_songs",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793202621889,
+      "tag": "0005_video_courses",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793203621889,
+      "tag": "0006_more_basses_keys_drums",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793204621889,
+      "tag": "0007_music_legends",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793205621889,
+      "tag": "0008_rock_legends_stories",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793206621889,
+      "tag": "0009_learning_paths",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793207621889,
+      "tag": "0010_gestionale",
+      "breakpoints": true
+    }
+  ]
+}

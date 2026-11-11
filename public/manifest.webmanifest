@@ -1,0 +1,20 @@
+{
+  "name": "Tono — Impara a suonare i tuoi brani",
+  "short_name": "Tono",
+  "description": "Accordatore, metronomo, esercizi, corsi e brani per chitarra, basso, pianoforte e batteria.",
+  "lang": "it",
+  "start_url": "/studio",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#161412",
+  "theme_color": "#161412",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Accordatore", "url": "/accordatore", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Sessione guidata", "url": "/sessione", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

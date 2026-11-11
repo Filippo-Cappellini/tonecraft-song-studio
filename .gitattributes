@@ -1,0 +1,6 @@
+# Script e unit del Raspberry: sempre a capo Linux, anche se il progetto passa da Windows.
+*.sh text eol=lf
+*.service text eol=lf
+*.timer text eol=lf
+*.mjs text eol=lf
+*.sql text eol=lf

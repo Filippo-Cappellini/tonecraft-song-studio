@@ -1,0 +1,36 @@
+[Unit]
+Description=Tono (Tonecraft) - app e gestionale
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=tonecraft
+Group=tonecraft
+WorkingDirectory=/opt/tonecraft
+EnvironmentFile=/etc/tonecraft/tonecraft.env
+ExecStart=/usr/bin/node /opt/tonecraft/.output/server/index.mjs
+Restart=on-failure
+RestartSec=3
+
+# Protezioni: il servizio non può scrivere sul sistema né ottenere privilegi.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
