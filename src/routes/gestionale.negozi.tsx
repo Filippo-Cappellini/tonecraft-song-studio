@@ -11,7 +11,7 @@ import {
   useStaff,
 } from "@/components/gestionale/kit";
 import { ShopLinks } from "@/components/gestionale/ShopLinks";
-import { listShops } from "@/lib/inventory.functions";
+import { listShops } from "@/lib/tables.functions";
 import { safeHttpsUrl } from "@/lib/safe-url";
 
 export const Route = createFileRoute("/gestionale/negozi")({ component: Negozi });

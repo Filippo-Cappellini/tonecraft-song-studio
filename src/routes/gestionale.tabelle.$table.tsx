@@ -41,7 +41,8 @@ function TablePage() {
   const [q, setQ] = useState("");
   const [offset, setOffset] = useState(0);
   const [editing, setEditing] = useState<Record<string, RowValue> | "new" | null>(null);
-  const allowed = staff.can(def.perm);
+  const allowed = staff.can("vedere");
+  const canEdit = staff.can(def.perm);
 
   const page = useQuery({
     queryKey: ["gestionale", "table", table, q, offset],
@@ -51,9 +52,7 @@ function TablePage() {
   });
   if (!allowed) return <Forbidden />;
 
-  const siblings = TABLE_NAMES.filter(
-    (t) => TABLES[t].group === def.group && staff.can(TABLES[t].perm),
-  );
+  const siblings = TABLE_NAMES.filter((t) => TABLES[t].group === def.group);
   const listCols = def.columns.filter((c) => c.list);
   const total = page.data?.total ?? 0;
   const size = page.data?.pageSize ?? 50;
@@ -62,15 +61,13 @@ function TablePage() {
     <>
       <PageTitle
         title={def.label}
-        subtitle={
-          def.group === "Catalogo"
-            ? "Dati del catalogo mostrati nell'app."
-            : "Anagrafica del negozio."
-        }
+        subtitle={`Tabella «${table}» del database${canEdit ? "." : " · sola lettura per il tuo ruolo."}`}
         actions={
-          <Button onClick={() => setEditing("new")}>
-            <Plus /> Nuova riga
-          </Button>
+          canEdit && (
+            <Button onClick={() => setEditing("new")}>
+              <Plus /> Nuova riga
+            </Button>
+          )
         }
       />
       {siblings.length > 1 && (
@@ -173,6 +170,7 @@ function TablePage() {
           table={table}
           def={def}
           row={editing === "new" ? null : editing}
+          readOnly={!canEdit}
           onClose={() => setEditing(null)}
         />
       )}
@@ -193,11 +191,13 @@ function RowDialog({
   table,
   def,
   row,
+  readOnly,
   onClose,
 }: {
   table: TableName;
   def: TableDef;
   row: Record<string, RowValue> | null;
+  readOnly: boolean;
   onClose: () => void;
 }) {
   const qc = useQueryClient();
@@ -254,43 +254,48 @@ function RowDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {row ? `Modifica · ${show(row[def.title])}` : `Nuova riga · ${def.label}`}
+            {!row
+              ? `Nuova riga · ${def.label}`
+              : `${readOnly ? "Dettaglio" : "Modifica"} · ${show(row[def.title])}`}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
-          {!def.autoPk &&
-            (row ? (
-              <Field label={def.pkRef ? "Brano (id)" : "Id"} className="sm:col-span-2">
-                <input className={`${inputClass} font-mono`} value={id ?? ""} disabled />
-              </Field>
-            ) : (
-              <Field
-                label={def.pkRef ? "Brano (id)" : "Id"}
-                help="Minuscole, cifre e - _ . Non si cambia più dopo il salvataggio."
-                className="sm:col-span-2"
-              >
-                <RefInput
-                  refTable={def.pkRef}
-                  value={newId}
-                  onChange={setNewId}
-                  required
-                  className="font-mono"
-                />
-              </Field>
+          {/* Sola lettura: tutti i campi disattivati, nessun pulsante per salvare o eliminare. */}
+          <fieldset disabled={readOnly} className="contents">
+            {!def.autoPk &&
+              (row ? (
+                <Field label={def.pkRef ? "Brano (id)" : "Id"} className="sm:col-span-2">
+                  <input className={`${inputClass} font-mono`} value={id ?? ""} disabled />
+                </Field>
+              ) : (
+                <Field
+                  label={def.pkRef ? "Brano (id)" : "Id"}
+                  help="Minuscole, cifre e - _ . Non si cambia più dopo il salvataggio."
+                  className="sm:col-span-2"
+                >
+                  <RefInput
+                    refTable={def.pkRef}
+                    value={newId}
+                    onChange={setNewId}
+                    required
+                    className="font-mono"
+                  />
+                </Field>
+              ))}
+            {def.columns.map((c) => (
+              <ColumnInput
+                key={c.name}
+                c={c}
+                value={values[c.name] ?? ""}
+                onChange={(v) => setValues({ ...values, [c.name]: v })}
+              />
             ))}
-          {def.columns.map((c) => (
-            <ColumnInput
-              key={c.name}
-              c={c}
-              value={values[c.name] ?? ""}
-              onChange={(v) => setValues({ ...values, [c.name]: v })}
-            />
-          ))}
+          </fieldset>
           <div className="sm:col-span-2">
             <Errors errors={errors} />
           </div>
           <div className="flex flex-wrap justify-between gap-2 sm:col-span-2">
-            {row ? (
+            {row && !readOnly ? (
               <Button type="button" variant="ghost" className="text-destructive" onClick={remove}>
                 <Trash2 /> Elimina
               </Button>
@@ -299,11 +304,13 @@ function RowDialog({
             )}
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={onClose}>
-                Annulla
+                {readOnly ? "Chiudi" : "Annulla"}
               </Button>
-              <Button type="submit" disabled={busy}>
-                {busy ? "Salvataggio…" : "Salva"}
-              </Button>
+              {!readOnly && (
+                <Button type="submit" disabled={busy}>
+                  {busy ? "Salvataggio…" : "Salva"}
+                </Button>
+              )}
             </div>
           </div>
         </form>

@@ -1,192 +1,128 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
-import { PageTitle, Panel, Stat, useStaff } from "@/components/gestionale/kit";
-import { getDashboard, type Dashboard } from "@/lib/inventory.functions";
-import { formatEur } from "@/lib/shop";
-import { TABLE_NAMES, TABLES } from "@/lib/admin-tables";
+import {
+  Errors,
+  errorText,
+  fmtDate,
+  PageTitle,
+  Panel,
+  Stat,
+  useStaff,
+} from "@/components/gestionale/kit";
+import { TABLE_NAMES, TABLES, type TableName } from "@/lib/admin-tables";
+import { getDatabaseOverview } from "@/lib/tables.functions";
 
-export const Route = createFileRoute("/gestionale/")({ component: Riepilogo });
+export const Route = createFileRoute("/gestionale/")({ component: DatabasePage });
 
-function Riepilogo() {
+const HINTS: Partial<Record<TableName, string>> = {
+  instruments: "Chitarra, basso, pianoforte, batteria.",
+  brands: "Marche di ogni strumento.",
+  models: "Modelli e colori per marca.",
+  amps: "Amplificatori per strumento.",
+  songs: "Titolo, artista, BPM, tonalità e notazione.",
+  tones: "Impostazioni dell'amplificatore per ogni brano.",
+  exercises: "Esercizi con passaggi e metronomo.",
+  courses: "Video corsi consigliati (link esterni).",
+  legends: "Curiosità sui grandi della musica.",
+  learning_paths: "Percorsi di lezioni in ordine.",
+  lessons: "Lezioni dei percorsi.",
+  shops: "Negozi online di fiducia e indirizzi di ricerca.",
+};
+
+const fmtSize = (b: number) =>
+  b >= 1024 * 1024
+    ? `${(b / 1024 / 1024).toFixed(1).replace(".", ",")} MB`
+    : `${Math.round(b / 1024)} KB`;
+
+function DatabasePage() {
   const staff = useStaff();
-  const shop = staff.can("magazzino") || staff.can("vendite");
-  const dash = useQuery({
-    queryKey: ["gestionale", "dashboard"],
-    queryFn: () => getDashboard(),
-    enabled: shop,
-    refetchInterval: 60_000,
+  const overview = useQuery({
+    queryKey: ["gestionale", "overview"],
+    queryFn: () => getDatabaseOverview(),
+    enabled: staff.can("vedere"),
   });
+  const d = overview.data;
+  const total = d?.tables.reduce((t, x) => t + x.rows, 0) ?? 0;
+  const rows = new Map(d?.tables.map((t) => [t.table, t.rows]));
 
   return (
     <>
       <PageTitle
-        title={`Ciao, ${staff.user?.full_name.split(" ")[0] ?? ""}`}
-        subtitle="Situazione del negozio e scorciatoie."
+        title="Database"
+        subtitle={
+          staff.can("catalogo")
+            ? "Qui sono salvati i dati dell'app. Apri una tabella per consultarla o modificarla."
+            : "Qui sono salvati i dati dell'app. Il tuo ruolo può consultarli senza modificarli."
+        }
       />
-      {shop && dash.data && <ShopSummary d={dash.data} />}
-      {shop && dash.isError && (
-        <Panel>
-          <p className="text-sm text-destructive">Riepilogo non disponibile.</p>
-        </Panel>
-      )}
-      {staff.can("catalogo") && (
-        <Panel title="Catalogo dell'app" className="mt-6">
-          <p className="mb-3 text-sm text-muted-foreground">
-            Le modifiche si vedono subito nelle pagine pubbliche (ricaricandole).
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {TABLE_NAMES.filter((t) => TABLES[t].group === "Catalogo").map((t) => (
+      {overview.isError && <Errors errors={[errorText(overview.error)]} />}
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3">
+        <Stat
+          label="Righe salvate"
+          value={d ? total.toLocaleString("it-IT") : "…"}
+          hint={`in ${TABLE_NAMES.length} tabelle`}
+        />
+        <Stat
+          label="Spazio occupato"
+          value={d ? fmtSize(d.sizeBytes) : "…"}
+          hint="tutto il database"
+        />
+        <Stat
+          label="Motore"
+          value={d ? `PostgreSQL ${d.version.split(" ")[0]}` : "…"}
+          hint="sul server, backup ogni notte"
+        />
+      </div>
+
+      {(["Catalogo", "Link"] as const).map((group) => (
+        <section key={group} className="mb-6">
+          <h2 className="mb-3 text-lg font-semibold">
+            {group === "Catalogo" ? "Dati dell'app" : "Link"}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {TABLE_NAMES.filter((t) => TABLES[t].group === group).map((t) => (
               <Link
                 key={t}
                 to="/gestionale/tabelle/$table"
                 params={{ table: t }}
-                className="rounded-full border px-3 py-1.5 text-sm hover:border-primary hover:text-primary"
+                className="rounded-2xl border bg-card/60 p-4 transition hover:-translate-y-0.5 hover:border-primary"
               >
-                {TABLES[t].label}
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-semibold">{TABLES[t].label}</span>
+                  <span className="tabular-nums text-sm text-muted-foreground">
+                    {rows.has(t) ? rows.get(t)!.toLocaleString("it-IT") : "…"}
+                  </span>
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">{HINTS[t]}</div>
+                <div className="mt-2 font-mono text-xs text-muted-foreground/70">{t}</div>
               </Link>
             ))}
           </div>
-        </Panel>
-      )}
-    </>
-  );
-}
+        </section>
+      ))}
 
-function ShopSummary({ d }: { d: Dashboard }) {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat
-          label="Incasso di oggi"
-          value={formatEur(d.todayCents)}
-          hint={`${d.todaySales} vendite`}
-        />
-        <Stat
-          label="Incasso del mese"
-          value={formatEur(d.monthCents)}
-          hint={`${d.monthSales} vendite`}
-        />
-        <Stat
-          label="Pezzi in magazzino"
-          value={d.units.toLocaleString("it-IT")}
-          hint={`${d.products} prodotti attivi`}
-        />
-        <Stat
-          label="Valore a costo"
-          value={formatEur(d.stockValueCents)}
-          hint="giacenza × costo d'acquisto"
-        />
-      </div>
-      <Panel title="Incassi degli ultimi 30 giorni">
-        <SalesBars days={d.last30} />
-      </Panel>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Panel
-          title="Da riordinare"
-          actions={
-            <Link
-              to="/gestionale/prodotti"
-              search={{ sotto: true }}
-              className="text-sm text-primary hover:underline"
-            >
-              Vedi tutti
-            </Link>
-          }
-        >
-          {d.lowStock.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nessun prodotto sotto la scorta minima.</p>
+      {d?.recent && (
+        <Panel title="Ultime modifiche">
+          {d.recent.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Ancora nessuna modifica.</p>
           ) : (
             <ul className="divide-y text-sm">
-              {d.lowStock.map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-2 py-2">
-                  <span className="min-w-0 truncate">
-                    <AlertTriangle className="mr-1 inline h-3.5 w-3.5 text-amber-400" aria-hidden />
-                    {p.name} <span className="text-muted-foreground">· {p.sku}</span>
+              {d.recent.map((r) => (
+                <li key={r.id} className="flex flex-wrap justify-between gap-2 py-2">
+                  <span>
+                    <span className="font-medium">{r.username}</span> · {r.action}{" "}
+                    <span className="text-muted-foreground">
+                      {r.entity}
+                      {r.entity_id ? ` · ${r.entity_id}` : ""}
+                    </span>
                   </span>
-                  <span className="shrink-0 tabular-nums">
-                    {p.stock === 0 ? "Esaurito" : `${p.stock} (min ${p.min_stock})`}
-                  </span>
+                  <span className="text-muted-foreground">{fmtDate(r.created_at)}</span>
                 </li>
               ))}
             </ul>
           )}
         </Panel>
-        <Panel title="Più venduti (30 giorni)">
-          {d.top.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Ancora nessuna vendita.</p>
-          ) : (
-            <ol className="divide-y text-sm">
-              {d.top.map((t) => (
-                <li key={t.name} className="flex justify-between gap-2 py-2">
-                  <span className="truncate">{t.name}</span>
-                  <span className="shrink-0 tabular-nums text-muted-foreground">
-                    {t.quantity} pz · {formatEur(t.cents)}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </Panel>
-      </div>
-    </div>
-  );
-}
-
-/** Una barra per giorno, con il valore al passaggio del mouse (o al tocco) e una tabella per chi usa lo screen reader. */
-function SalesBars({ days }: { days: Dashboard["last30"] }) {
-  const [hover, setHover] = useState<number | null>(null);
-  const max = Math.max(1, ...days.map((d) => d.cents));
-  const fmtDay = (s: string) =>
-    new Date(`${s}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
-  const shown = hover !== null ? days[hover] : null;
-  return (
-    <div>
-      <div className="mb-2 h-5 text-sm text-muted-foreground" aria-hidden>
-        {shown ? (
-          <>
-            <span className="text-foreground tabular-nums">{formatEur(shown.cents)}</span> ·{" "}
-            {fmtDay(shown.day)}
-          </>
-        ) : (
-          "Passa sulle barre per vedere il giorno."
-        )}
-      </div>
-      <div
-        className="flex h-40 items-end gap-[2px] border-b border-border/60"
-        aria-hidden
-        onMouseLeave={() => setHover(null)}
-      >
-        {days.map((d, i) => (
-          <div
-            key={d.day}
-            className="flex h-full flex-1 items-end"
-            onMouseEnter={() => setHover(i)}
-            onClick={() => setHover(i)}
-          >
-            <div
-              className={`w-full rounded-t-[4px] ${hover === i ? "bg-primary" : "bg-primary/60"}`}
-              style={{ height: d.cents ? `${Math.max(2, (d.cents / max) * 100)}%` : "0%" }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="mt-1 flex justify-between text-xs text-muted-foreground" aria-hidden>
-        <span>{days[0] ? fmtDay(days[0].day) : ""}</span>
-        <span>oggi</span>
-      </div>
-      <table className="sr-only">
-        <caption>Incassi giornalieri degli ultimi 30 giorni</caption>
-        <tbody>
-          {days.map((d) => (
-            <tr key={d.day}>
-              <th scope="row">{fmtDay(d.day)}</th>
-              <td>{formatEur(d.cents)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+      )}
+    </>
   );
 }

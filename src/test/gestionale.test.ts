@@ -1,44 +1,13 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { cartProblems, cartTotal, formatEur, parseEur, shopLink, stockLevel } from "@/lib/shop";
+import { shopLink } from "@/lib/shop";
 import { isTableName, TABLE_NAMES, TABLES, validateRow, validId, type Column } from "@/lib/admin-tables";
 import { can, canAny, passwordProblem, ROLE_IDS, USERNAME_RE } from "@/lib/staff-roles";
 
 // auth.server.ts legge cookie e richiesta da TanStack Start: qui servono solo le funzioni sulle password.
 vi.mock("@tanstack/react-start/server", () => ({}));
 vi.mock("@/lib/server/db.server", () => ({ db: () => { throw new Error("niente database nei test"); } }));
-
-describe("prezzi e carrello", () => {
-  it("legge gli importi scritti all'italiana e non accetta valori strani", () => {
-    expect(parseEur("12,50")).toBe(1250);
-    expect(parseEur("12.5")).toBe(1250);
-    expect(parseEur("1.234,99 €")).toBe(123499);
-    expect(parseEur("0")).toBe(0);
-    expect(parseEur("-3")).toBeNull();
-    expect(parseEur("12,345")).toBeNull();
-    expect(parseEur("abc")).toBeNull();
-    expect(parseEur("")).toBeNull();
-    expect(formatEur(12345678).replace(/\s/g, " ")).toBe("123.456,78 €");
-  });
-
-  it("controlla le giacenze sommando le righe dello stesso prodotto", () => {
-    const stock = new Map([["a", { name: "Corde", stock: 3 }]]);
-    expect(cartProblems([{ productId: "a", quantity: 2, unitPriceCents: 500 }], stock)).toEqual([]);
-    expect(cartProblems([{ productId: "a", quantity: 2, unitPriceCents: 500 }, { productId: "a", quantity: 2, unitPriceCents: 500 }], stock)).toEqual([
-      "Corde: disponibili 3, richiesti 4.",
-    ]);
-    expect(cartProblems([], stock)).toContain("Il carrello è vuoto.");
-    expect(cartProblems([{ productId: "x", quantity: 1, unitPriceCents: 1 }], stock)).toContain("Prodotto non trovato.");
-    expect(cartTotal([{ productId: "a", quantity: 3, unitPriceCents: 250 }])).toBe(750);
-  });
-
-  it("classifica le scorte", () => {
-    expect(stockLevel(0, 2)).toBe("esaurito");
-    expect(stockLevel(2, 2)).toBe("basso");
-    expect(stockLevel(5, 2)).toBe("ok");
-  });
-});
 
 describe("negozi online", () => {
   const thomann = { website: "https://www.thomann.it/", search_url: "https://www.thomann.it/search_dir.html?sw={q}" };
@@ -58,15 +27,17 @@ describe("negozi online", () => {
 });
 
 describe("ruoli", () => {
-  it("l'amministratore può tutto, il commesso solo vendere", () => {
+  it("l'amministratore può tutto, il redattore modifica i dati, la sola lettura consulta", () => {
     expect(can("admin", "admin")).toBe(true);
-    expect(can("vendite", "vendite")).toBe(true);
-    expect(can("vendite", "magazzino")).toBe(false);
-    expect(can("catalogo", "vendite")).toBe(false);
-    expect(canAny("magazzino", ["vendite", "admin"])).toBe(true);
-    expect(can(null, "vendite")).toBe(false);
-    expect(can("hacker" as never, "admin")).toBe(false);
+    expect(can("catalogo", "catalogo")).toBe(true);
+    expect(can("catalogo", "admin")).toBe(false);
+    expect(can("lettura", "vedere")).toBe(true);
+    expect(can("lettura", "catalogo")).toBe(false);
+    expect(canAny("lettura", ["catalogo", "admin"])).toBe(false);
+    expect(can(null, "vedere")).toBe(false);
+    expect(can("vendite" as never, "vedere")).toBe(false); // ruolo eliminato
     expect(ROLE_IDS.filter((r) => can(r, "admin"))).toEqual(["admin"]);
+    expect(ROLE_IDS.every((r) => can(r, "vedere"))).toBe(true);
   });
   it("nomi utente e password", () => {
     expect(USERNAME_RE.test("mario.rossi")).toBe(true);
@@ -144,9 +115,7 @@ describe("tabelle modificabili dal gestionale", () => {
     expect(isTableName("constructor")).toBe(false);
     expect(validId(TABLES.songs, "wonderwall-oasis")).toBe(true);
     expect(validId(TABLES.songs, "x'; drop table songs;--")).toBe(false);
-    expect(validId(TABLES.customers, "not-a-uuid")).toBe(false);
-    expect(validId(TABLES.customers, "6f1c2d3e-4b5a-4c6d-8e9f-0a1b2c3d4e5f")).toBe(true);
-  });
+          });
 });
 
 describe("password", () => {

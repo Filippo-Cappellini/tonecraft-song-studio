@@ -128,7 +128,7 @@ function UserDialog({ user, onClose }: { user: StaffUserRow | null; onClose: () 
   const [f, setF] = useState({
     username: user?.username ?? "",
     full_name: user?.full_name ?? "",
-    role: (user?.role ?? "vendite") as Role,
+    role: (user?.role ?? "lettura") as Role,
     active: user?.active ?? true,
     password: "",
   });

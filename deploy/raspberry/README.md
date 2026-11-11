@@ -48,23 +48,22 @@ Se `tono.local` non si apre (alcuni Android), usa l'indirizzo IP che lo script s
 
 ## Il gestionale
 
+Il gestionale è il **database dell'app**: qui sono salvati tutti i dati che l'app mostra.
+
 | Ruolo | Cosa può fare |
 |---|---|
-| Amministratore | Tutto, compresi utenti, elenco dei negozi online e registro attività |
-| Redattore catalogo | Modifica brani, suoni, strumenti, modelli, amplificatori, esercizi, corsi e lezioni dell'app |
-| Magazziniere | Prodotti, giacenze, carichi/scarichi/rettifiche, fornitori, annullo vendite; può anche vendere |
-| Commesso | Vendite al banco e clienti; vede i prodotti ma non li modifica |
+| Amministratore | Tutto: dati dell'app, utenti, negozi online e registro delle modifiche |
+| Redattore | Consulta e modifica i dati dell'app (brani, suoni, strumenti, modelli, amplificatori, esercizi, corsi, lezioni) |
+| Sola lettura | Consulta il database senza poter modificare nulla |
 
-- **Riepilogo**: incassi di oggi e del mese, valore del magazzino, grafico degli ultimi 30 giorni, prodotti da riordinare.
-- **Prodotti**: articoli con prezzo, costo, IVA, scorta minima, posizione, fornitore. Accanto a ogni prodotto ci sono i link
-  di ricerca su **Thomann**, **Strumentimusicali.net** e **MusicalStore2005**.
-- **Vendite**: scontrino con più righe (prezzo modificabile per gli sconti), pagamento, cliente. La giacenza scala da sola e
-  non si può vendere più di quello che c'è. Una vendita si può annullare: la merce torna in magazzino.
-- **Negozi online**: ricerca su tutti i negozi insieme. L'amministratore può aggiungere o cambiare negozi.
-  MusicalStore2005 non permette la verifica automatica del suo indirizzo di ricerca, quindi per ora apre la home:
-  per aggiungerlo, fai una ricerca sul loro sito, copia l'indirizzo della pagina dei risultati, metti `{q}` al posto
-  della parola cercata e salvalo in *Negozi online → Modifica l'elenco → Indirizzo di ricerca*.
-- Ogni operazione resta nel **registro attività** (Utenti e registro).
+- **Database**: tutte le tabelle con il numero di righe salvate, lo spazio occupato e (per l'amministratore) le ultime
+  modifiche. Si apre una tabella per cercare, consultare e, se il ruolo lo permette, aggiungere, modificare o eliminare righe.
+  Le modifiche si vedono subito nelle pagine dell'app.
+- **Negozi online**: ricerca di uno strumento su **Thomann**, **Strumentimusicali.net** e **MusicalStore2005** insieme.
+  L'amministratore può aggiungere o cambiare negozi. MusicalStore2005 non permette la verifica automatica del suo
+  indirizzo di ricerca, quindi per ora apre la home: per aggiungerlo, fai una ricerca sul loro sito, copia l'indirizzo
+  della pagina dei risultati, metti `{q}` al posto della parola cercata e salvalo nella tabella *Negozi online*.
+- Ogni modifica resta nel **registro** (Utenti e registro).
 
 Altri utenti si creano dal gestionale (Utenti e registro → Nuovo utente). Se l'amministratore dimentica la password:
 ```bash

@@ -1,6 +1,7 @@
 // Ruoli dello staff del gestionale e cosa può fare ciascuno. Usato sia dal server (controlli) sia dal menu.
-export type Permission = "catalogo" | "magazzino" | "vendite" | "admin";
-export type Role = "admin" | "catalogo" | "magazzino" | "vendite";
+/** vedere: consultare il database; catalogo: modificare i dati dell'app; admin: utenti, negozi e registro. */
+export type Permission = "vedere" | "catalogo" | "admin";
+export type Role = "admin" | "catalogo" | "lettura";
 
 export const ROLES: Record<
   Role,
@@ -8,23 +9,19 @@ export const ROLES: Record<
 > = {
   admin: {
     label: "Amministratore",
-    description: "Tutto il gestionale, compresi utenti, negozi online e registro attività.",
-    perms: ["catalogo", "magazzino", "vendite", "admin"],
+    description: "Tutto: dati dell'app, utenti, negozi online e registro delle modifiche.",
+    perms: ["vedere", "catalogo", "admin"],
   },
   catalogo: {
-    label: "Redattore catalogo",
-    description: "Modifica brani, strumenti, amplificatori, esercizi e corsi dell'app.",
-    perms: ["catalogo"],
+    label: "Redattore",
+    description:
+      "Consulta e modifica i dati dell'app: brani, strumenti, amplificatori, esercizi, corsi.",
+    perms: ["vedere", "catalogo"],
   },
-  magazzino: {
-    label: "Magazziniere",
-    description: "Prodotti, giacenze, carichi e scarichi, fornitori; può anche vendere.",
-    perms: ["magazzino", "vendite"],
-  },
-  vendite: {
-    label: "Commesso",
-    description: "Vendite al banco e clienti; vede i prodotti ma non li modifica.",
-    perms: ["vendite"],
+  lettura: {
+    label: "Sola lettura",
+    description: "Consulta il database senza poter modificare nulla.",
+    perms: ["vedere"],
   },
 };
 

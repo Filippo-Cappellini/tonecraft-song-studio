@@ -28,12 +28,8 @@ import { Route as CorsiIndexRouteImport } from './routes/corsi.index'
 import { Route as CorsiPathIdRouteImport } from './routes/corsi.$pathId'
 import { Route as GestionaleIndexRouteImport } from './routes/gestionale.index'
 import { Route as GestionaleAccountRouteImport } from './routes/gestionale.account'
-import { Route as GestionaleCatalogoRouteImport } from './routes/gestionale.catalogo'
-import { Route as GestionaleMovimentiRouteImport } from './routes/gestionale.movimenti'
 import { Route as GestionaleNegoziRouteImport } from './routes/gestionale.negozi'
-import { Route as GestionaleProdottiRouteImport } from './routes/gestionale.prodotti'
 import { Route as GestionaleUtentiRouteImport } from './routes/gestionale.utenti'
-import { Route as GestionaleVenditeRouteImport } from './routes/gestionale.vendite'
 import { Route as StrumentoIdRouteImport } from './routes/strumento.$id'
 import { Route as GestionaleTabelleTableRouteImport } from './routes/gestionale.tabelle.$table'
 
@@ -132,34 +128,14 @@ const GestionaleAccountRoute = GestionaleAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => GestionaleRoute,
 } as any)
-const GestionaleCatalogoRoute = GestionaleCatalogoRouteImport.update({
-  id: '/catalogo',
-  path: '/catalogo',
-  getParentRoute: () => GestionaleRoute,
-} as any)
-const GestionaleMovimentiRoute = GestionaleMovimentiRouteImport.update({
-  id: '/movimenti',
-  path: '/movimenti',
-  getParentRoute: () => GestionaleRoute,
-} as any)
 const GestionaleNegoziRoute = GestionaleNegoziRouteImport.update({
   id: '/negozi',
   path: '/negozi',
   getParentRoute: () => GestionaleRoute,
 } as any)
-const GestionaleProdottiRoute = GestionaleProdottiRouteImport.update({
-  id: '/prodotti',
-  path: '/prodotti',
-  getParentRoute: () => GestionaleRoute,
-} as any)
 const GestionaleUtentiRoute = GestionaleUtentiRouteImport.update({
   id: '/utenti',
   path: '/utenti',
-  getParentRoute: () => GestionaleRoute,
-} as any)
-const GestionaleVenditeRoute = GestionaleVenditeRouteImport.update({
-  id: '/vendite',
-  path: '/vendite',
   getParentRoute: () => GestionaleRoute,
 } as any)
 const StrumentoIdRoute = StrumentoIdRouteImport.update({
@@ -190,12 +166,8 @@ export interface FileRoutesByFullPath {
   '/brani/$songId': typeof BraniSongIdRoute
   '/corsi/$pathId': typeof CorsiPathIdRoute
   '/gestionale/account': typeof GestionaleAccountRoute
-  '/gestionale/catalogo': typeof GestionaleCatalogoRoute
-  '/gestionale/movimenti': typeof GestionaleMovimentiRoute
   '/gestionale/negozi': typeof GestionaleNegoziRoute
-  '/gestionale/prodotti': typeof GestionaleProdottiRoute
   '/gestionale/utenti': typeof GestionaleUtentiRoute
-  '/gestionale/vendite': typeof GestionaleVenditeRoute
   '/strumento/$id': typeof StrumentoIdRoute
   '/brani/': typeof BraniIndexRoute
   '/corsi/': typeof CorsiIndexRoute
@@ -218,12 +190,8 @@ export interface FileRoutesByTo {
   '/brani/$songId': typeof BraniSongIdRoute
   '/corsi/$pathId': typeof CorsiPathIdRoute
   '/gestionale/account': typeof GestionaleAccountRoute
-  '/gestionale/catalogo': typeof GestionaleCatalogoRoute
-  '/gestionale/movimenti': typeof GestionaleMovimentiRoute
   '/gestionale/negozi': typeof GestionaleNegoziRoute
-  '/gestionale/prodotti': typeof GestionaleProdottiRoute
   '/gestionale/utenti': typeof GestionaleUtentiRoute
-  '/gestionale/vendite': typeof GestionaleVenditeRoute
   '/strumento/$id': typeof StrumentoIdRoute
   '/brani': typeof BraniIndexRoute
   '/corsi': typeof CorsiIndexRoute
@@ -248,12 +216,8 @@ export interface FileRoutesById {
   '/brani/$songId': typeof BraniSongIdRoute
   '/corsi/$pathId': typeof CorsiPathIdRoute
   '/gestionale/account': typeof GestionaleAccountRoute
-  '/gestionale/catalogo': typeof GestionaleCatalogoRoute
-  '/gestionale/movimenti': typeof GestionaleMovimentiRoute
   '/gestionale/negozi': typeof GestionaleNegoziRoute
-  '/gestionale/prodotti': typeof GestionaleProdottiRoute
   '/gestionale/utenti': typeof GestionaleUtentiRoute
-  '/gestionale/vendite': typeof GestionaleVenditeRoute
   '/strumento/$id': typeof StrumentoIdRoute
   '/brani/': typeof BraniIndexRoute
   '/corsi/': typeof CorsiIndexRoute
@@ -279,12 +243,8 @@ export interface FileRouteTypes {
     | '/brani/$songId'
     | '/corsi/$pathId'
     | '/gestionale/account'
-    | '/gestionale/catalogo'
-    | '/gestionale/movimenti'
     | '/gestionale/negozi'
-    | '/gestionale/prodotti'
     | '/gestionale/utenti'
-    | '/gestionale/vendite'
     | '/strumento/$id'
     | '/brani/'
     | '/corsi/'
@@ -307,12 +267,8 @@ export interface FileRouteTypes {
     | '/brani/$songId'
     | '/corsi/$pathId'
     | '/gestionale/account'
-    | '/gestionale/catalogo'
-    | '/gestionale/movimenti'
     | '/gestionale/negozi'
-    | '/gestionale/prodotti'
     | '/gestionale/utenti'
-    | '/gestionale/vendite'
     | '/strumento/$id'
     | '/brani'
     | '/corsi'
@@ -336,12 +292,8 @@ export interface FileRouteTypes {
     | '/brani/$songId'
     | '/corsi/$pathId'
     | '/gestionale/account'
-    | '/gestionale/catalogo'
-    | '/gestionale/movimenti'
     | '/gestionale/negozi'
-    | '/gestionale/prodotti'
     | '/gestionale/utenti'
-    | '/gestionale/vendite'
     | '/strumento/$id'
     | '/brani/'
     | '/corsi/'
@@ -505,20 +457,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestionaleAccountRouteImport
       parentRoute: typeof GestionaleRoute
     }
-    '/gestionale/catalogo': {
-      id: '/gestionale/catalogo'
-      path: '/catalogo'
-      fullPath: '/gestionale/catalogo'
-      preLoaderRoute: typeof GestionaleCatalogoRouteImport
-      parentRoute: typeof GestionaleRoute
-    }
-    '/gestionale/movimenti': {
-      id: '/gestionale/movimenti'
-      path: '/movimenti'
-      fullPath: '/gestionale/movimenti'
-      preLoaderRoute: typeof GestionaleMovimentiRouteImport
-      parentRoute: typeof GestionaleRoute
-    }
     '/gestionale/negozi': {
       id: '/gestionale/negozi'
       path: '/negozi'
@@ -526,25 +464,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestionaleNegoziRouteImport
       parentRoute: typeof GestionaleRoute
     }
-    '/gestionale/prodotti': {
-      id: '/gestionale/prodotti'
-      path: '/prodotti'
-      fullPath: '/gestionale/prodotti'
-      preLoaderRoute: typeof GestionaleProdottiRouteImport
-      parentRoute: typeof GestionaleRoute
-    }
     '/gestionale/utenti': {
       id: '/gestionale/utenti'
       path: '/utenti'
       fullPath: '/gestionale/utenti'
       preLoaderRoute: typeof GestionaleUtentiRouteImport
-      parentRoute: typeof GestionaleRoute
-    }
-    '/gestionale/vendite': {
-      id: '/gestionale/vendite'
-      path: '/vendite'
-      fullPath: '/gestionale/vendite'
-      preLoaderRoute: typeof GestionaleVenditeRouteImport
       parentRoute: typeof GestionaleRoute
     }
     '/strumento/$id': {
@@ -566,24 +490,16 @@ declare module '@tanstack/react-router' {
 
 interface GestionaleRouteChildren {
   GestionaleAccountRoute: typeof GestionaleAccountRoute
-  GestionaleCatalogoRoute: typeof GestionaleCatalogoRoute
-  GestionaleMovimentiRoute: typeof GestionaleMovimentiRoute
   GestionaleNegoziRoute: typeof GestionaleNegoziRoute
-  GestionaleProdottiRoute: typeof GestionaleProdottiRoute
   GestionaleUtentiRoute: typeof GestionaleUtentiRoute
-  GestionaleVenditeRoute: typeof GestionaleVenditeRoute
   GestionaleIndexRoute: typeof GestionaleIndexRoute
   GestionaleTabelleTableRoute: typeof GestionaleTabelleTableRoute
 }
 
 const GestionaleRouteChildren: GestionaleRouteChildren = {
   GestionaleAccountRoute: GestionaleAccountRoute,
-  GestionaleCatalogoRoute: GestionaleCatalogoRoute,
-  GestionaleMovimentiRoute: GestionaleMovimentiRoute,
   GestionaleNegoziRoute: GestionaleNegoziRoute,
-  GestionaleProdottiRoute: GestionaleProdottiRoute,
   GestionaleUtentiRoute: GestionaleUtentiRoute,
-  GestionaleVenditeRoute: GestionaleVenditeRoute,
   GestionaleIndexRoute: GestionaleIndexRoute,
   GestionaleTabelleTableRoute: GestionaleTabelleTableRoute,
 }

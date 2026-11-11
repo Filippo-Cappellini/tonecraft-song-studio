@@ -77,8 +77,8 @@ async function main() {
   const role = arg("ruolo") ?? "admin";
   if (!/^[a-z0-9._-]{3,32}$/.test(username))
     throw new Error("--username: 3-32 caratteri tra minuscole, cifre, . _ -");
-  if (!["admin", "catalogo", "magazzino", "vendite"].includes(role))
-    throw new Error("--ruolo: admin, catalogo, magazzino o vendite");
+  if (!["admin", "catalogo", "lettura"].includes(role))
+    throw new Error("--ruolo: admin, catalogo o lettura");
   if (!process.env.DATABASE_URL)
     throw new Error("Manca DATABASE_URL (usa node --env-file=/etc/tonecraft/tonecraft.env).");
 

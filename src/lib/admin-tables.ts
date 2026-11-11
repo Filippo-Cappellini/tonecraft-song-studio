@@ -1,4 +1,4 @@
-// Tabelle modificabili dal gestionale con l'editor generico: catalogo dell'app e anagrafiche del negozio.
+// Tabelle del database consultabili e modificabili dal gestionale con l'editor generico.
 // Il server accetta solo tabelle e colonne elencate qui (i nomi non arrivano mai dal browser nella query SQL).
 import type { Permission } from "./staff-roles";
 
@@ -14,8 +14,6 @@ export type TableName =
   | "legends"
   | "learning_paths"
   | "lessons"
-  | "customers"
-  | "suppliers"
   | "shops";
 
 export type ColumnType = "text" | "long" | "int" | "bool" | "url";
@@ -36,7 +34,8 @@ export type Column = {
 };
 export type TableDef = {
   label: string;
-  group: "Catalogo" | "Negozio";
+  group: "Catalogo" | "Link";
+  /** Permesso per modificare (per consultare basta "vedere"). */
   perm: Permission;
   pk: string;
   /** true: chiave uuid generata dal database; false: id testuale scelto da chi crea la riga. */
@@ -335,41 +334,9 @@ export const TABLES = {
       { name: "tool_kind", label: "Tipo per l'attrezzo", type: "text" },
     ],
   },
-  customers: {
-    label: "Clienti",
-    group: "Negozio",
-    perm: "vendite",
-    pk: "id",
-    autoPk: true,
-    title: "full_name",
-    order: "full_name",
-    columns: [
-      { name: "full_name", label: "Nome e cognome", type: "text", required: true, list: true },
-      { name: "email", label: "Email", type: "text", list: true },
-      { name: "phone", label: "Telefono", type: "text", list: true },
-      { name: "notes", label: "Note", type: "long" },
-    ],
-  },
-  suppliers: {
-    label: "Fornitori",
-    group: "Negozio",
-    perm: "magazzino",
-    pk: "id",
-    autoPk: true,
-    title: "name",
-    order: "name",
-    columns: [
-      { name: "name", label: "Ragione sociale", type: "text", required: true, list: true },
-      { name: "contact", label: "Referente", type: "text", list: true },
-      { name: "email", label: "Email", type: "text", list: true },
-      { name: "phone", label: "Telefono", type: "text" },
-      { name: "website", label: "Sito (https)", type: "url" },
-      { name: "notes", label: "Note", type: "long" },
-    ],
-  },
   shops: {
     label: "Negozi online",
-    group: "Negozio",
+    group: "Link",
     perm: "admin",
     pk: "id",
     autoPk: false,

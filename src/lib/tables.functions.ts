@@ -2,12 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { cleanText, inputFields, inputObject } from "./safe-url";
 import {
   isTableName,
+  TABLE_NAMES,
   tableDef,
   validateRow,
   validId,
   type RowValue,
   type TableName,
 } from "./admin-tables";
+import type { Shop } from "./shop";
 import { db, dbErrorMessage } from "./server/db.server";
 import { audit, requireStaff } from "./server/auth.server";
 
@@ -41,7 +43,7 @@ export const listTableRows = createServerFn({ method: "GET" })
   })
   .handler(async ({ data }): Promise<RowsPage> => {
     const def = tableDef(data.table);
-    await requireStaff(def.perm);
+    await requireStaff("vedere");
     const sql = db();
     const cols = [def.pk, ...def.columns.map((c) => c.name)];
     const searchable = [
@@ -70,7 +72,7 @@ export const tableOptions = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => ({ table: readTable(inputFields<"table">(d)) }))
   .handler(async ({ data }) => {
     const def = tableDef(data.table);
-    await requireStaff();
+    await requireStaff("vedere");
     const sql = db();
     return sql<{ id: string; label: string }[]>`
       select ${sql(def.pk)}::text as id, ${sql(def.title)}::text as label from ${sql(data.table)}
@@ -138,3 +140,51 @@ export const deleteTableRow = createServerFn({ method: "POST" })
       return { ok: false, error: dbErrorMessage(e) };
     }
   });
+
+// --- Panoramica del database e negozi online -----------------------------------------------------
+export type DatabaseOverview = {
+  tables: { table: TableName; rows: number }[];
+  sizeBytes: number;
+  version: string;
+  /** Ultime modifiche (solo per l'amministratore). */
+  recent:
+    | {
+        id: number;
+        username: string;
+        action: string;
+        entity: string;
+        entity_id: string;
+        created_at: string;
+      }[]
+    | null;
+};
+
+export const getDatabaseOverview = createServerFn({ method: "GET" }).handler(
+  async (): Promise<DatabaseOverview> => {
+    const me = await requireStaff("vedere");
+    const sql = db();
+    // Nomi di tabella dall'elenco fisso: count(*) esatto, le tabelle sono piccole.
+    const counts = await Promise.all(
+      TABLE_NAMES.map(async (t) => {
+        const [r] = await sql<{ n: number }[]>`select count(*)::int as n from ${sql(t)}`;
+        return { table: t, rows: r?.n ?? 0 };
+      }),
+    );
+    const [info] = await sql<{ size: number; version: string }[]>`
+      select pg_database_size(current_database())::int8 as size, current_setting('server_version') as version`;
+    const recent =
+      me.role === "admin"
+        ? await sql<NonNullable<DatabaseOverview["recent"]>>`
+            select id, username, action, entity, entity_id, created_at::text
+            from audit_log where action not in ('accesso', 'accesso fallito') order by id desc limit 10`
+        : null;
+    return { tables: counts, sizeBytes: info?.size ?? 0, version: info?.version ?? "", recent };
+  },
+);
+
+export const listShops = createServerFn({ method: "GET" }).handler(async () => {
+  await requireStaff("vedere");
+  return db()<
+    Shop[]
+  >`select id, name, website, search_url, description from shops order by sort, name`;
+});

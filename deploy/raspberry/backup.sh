@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Backup del database di Tono (catalogo, prodotti, vendite, utenti). Tiene gli ultimi 14.
+# Backup del database di Tono (dati dell'app, utenti, registro). Tiene gli ultimi 14.
 # Installato come /usr/local/sbin/tonecraft-backup e lanciato ogni notte da tonecraft-backup.timer.
 # Ripristino:  sudo -u postgres pg_restore --clean --if-exists -d tonecraft /var/backups/tonecraft/<file>.dump
 set -euo pipefail
