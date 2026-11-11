@@ -22,7 +22,15 @@ Con Raspberry Pi Imager imposta già nome host (es. `tono`), utente, password, W
    scp tono-raspberry.tar.gz utente@tono.local:~/
    ```
    Sul Raspberry: `tar -xzf tono-raspberry.tar.gz`.
-   In alternativa, se il progetto è su GitHub: `git clone <indirizzo-del-repository>`.
+   **In alternativa, da GitHub** (repository privato `Filippo-Cappellini/tonecraft-song-studio`):
+   su github.com → Settings → Developer settings → Personal access tokens → *Fine-grained tokens* crea un token
+   con accesso **solo a questo repository** e permesso **Contents: Read-only**. Poi sul Raspberry:
+   ```bash
+   sudo apt-get install -y git
+   git clone https://github.com/Filippo-Cappellini/tonecraft-song-studio.git tonecraft-song-studio-main
+   ```
+   Come nome utente scrivi `Filippo-Cappellini`, come password incolla il token.
+   Per aggiornare in seguito: `cd tonecraft-song-studio-main && git pull && sudo bash deploy/raspberry/update.sh`.
 2. Sul Raspberry:
    ```bash
    cd ~/tonecraft-song-studio-main
