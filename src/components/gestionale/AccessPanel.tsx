@@ -12,8 +12,8 @@ const ERRORS: Record<string, string> = {
   "google-rifiutato": "Google non ha confermato l'accesso (serve un'email verificata). Riprova.",
   "registrazioni-chiuse":
     "Non esiste un account con questo profilo Google e le registrazioni sono chiuse.",
-  "email-in-uso": "L'email di questo profilo Google è già usata da un altro account.",
   disattivato: "Questo account è stato disattivato dall'amministratore.",
+  "accesso-richiesto": "Per collegare Google devi prima entrare nel tuo account.",
 };
 
 /** Accedi / Crea account, con "Continua con Google" se il server lo ha configurato. */

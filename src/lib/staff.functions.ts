@@ -91,6 +91,20 @@ export const staffSignup = createServerFn({ method: "POST" })
     }
   });
 
+/** Scollega Google dal proprio account (solo se c'è una password, per non restare chiusi fuori). */
+export const unlinkGoogle = createServerFn({ method: "POST" }).handler(
+  async (): Promise<{ ok: true } | { ok: false; error: string }> => {
+    const me = await requireStaff();
+    const [row] = await db()<{ id: string }[]>`
+      update staff_users set google_sub = null
+      where id = ${me.id} and password_hash is not null and google_sub is not null returning id`;
+    if (!row)
+      return { ok: false, error: "Prima crea una password, altrimenti non potresti più entrare." };
+    await audit(me, "scollega Google", "utente", me.id);
+    return { ok: true };
+  },
+);
+
 /** Dati del proprio account (per la pagina "Il mio account"). */
 export const getMyAccount = createServerFn({ method: "GET" }).handler(async () => {
   const me = await requireStaff();

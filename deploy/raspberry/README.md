@@ -148,9 +148,22 @@ Attenzione: `docker volume rm tonecraft-db` o `docker compose down -v` **cancell
 
 ## Sicurezza e limiti (rete locale in http)
 
-- Il database (in Docker) ascolta solo sul Raspberry; dalla rete si raggiunge solo l'app (porta 3000).
-  L'app usa un utente del database senza privilegi di amministrazione.
-- Le password sono salvate con scrypt; dopo 5 tentativi sbagliati l'accesso si blocca per 10 minuti.
+- Il database (in Docker, con `no-new-privileges`) ascolta solo sul Raspberry; dalla rete si raggiunge solo l'app (porta 3000).
+- **Privilegio minimo nel database**: l'app usa l'utente `tonecraft_app`, che può solo leggere e scrivere i dati.
+  Non può creare, modificare o cancellare tabelle, non può modificare né cancellare il registro delle attività,
+  non può leggere file del server né creare utenti, e le query oltre 15 secondi vengono interrotte. Così anche una
+  SQL injection non potrebbe distruggere il database. Il proprietario delle tabelle (`tonecraft`) serve solo alle
+  migrazioni e le sue credenziali sono in `/etc/tonecraft/migrate.env`, leggibile solo da root.
+- **SQL injection**: tutte le query passano i valori come parametri; nomi di tabelle e colonne solo da un elenco fisso.
+- **IDOR**: ogni funzione del server controlla chi è collegato e il suo ruolo; le operazioni sul proprio account usano
+  l'utente della sessione, mai un id mandato dal browser; utenti, sessioni e registro non sono raggiungibili dall'editor.
+- **SSRF**: il server chiama solo siti fissi (iTunes, feed delle notizie, Google) in https, con timeout e limite di
+  dimensione; gli indirizzi salvati nel database (negozi, corsi) finiscono solo nei link, mai in richieste del server.
+- **Google**: un profilo Google non viene mai collegato da solo a un account con la stessa email (le email delle
+  registrazioni non sono verificate); il collegamento si fa da *Il mio account*. Ogni ritorno da Google vale una volta sola.
+- Richieste oltre 1 MB rifiutate; risposte con dati personali mai in cache.
+- Le password sono salvate con scrypt; dopo 5 tentativi sbagliati da un dispositivo l'accesso si blocca per 10 minuti
+  (per un nome utente dopo 20, così nessuno può chiudere fuori l'amministratore con pochi tentativi).
 - Il servizio gira con un utente senza privilegi e con le protezioni di systemd.
 - In **http** il browser non permette alcune funzioni: **l'accordatore (microfono) e l'installazione come app
   non funzionano** da altri dispositivi (funzionano solo aprendo l'app dal Raspberry stesso). Tutto il resto, compreso

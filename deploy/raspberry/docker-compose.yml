@@ -29,6 +29,9 @@ services:
       timeout: 3s
       retries: 30
     shm_size: 128mb
+    # Nessun processo nel container può ottenere privilegi in più (setuid ecc.).
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   tonecraft-db:

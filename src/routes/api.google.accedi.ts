@@ -3,5 +3,5 @@ import { startGoogleLogin } from "@/lib/server/google.server";
 
 // Avvio dell'accesso con Google: redirect alla pagina di Google.
 export const Route = createFileRoute("/api/google/accedi")({
-  server: { handlers: { GET: () => startGoogleLogin() } },
+  server: { handlers: { GET: ({ request }) => startGoogleLogin(request) } },
 });

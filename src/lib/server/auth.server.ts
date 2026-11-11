@@ -61,9 +61,14 @@ export const fakeVerify = async (password: string) => {
 
 // --- Tentativi di accesso ----------------------------------------------------------------------
 const MAX_FAILS = 5;
+const MAX_FAILS_PER_USER = 20;
 const LOCK_MS = 10 * 60 * 1000;
 const fails = new Map<string, { count: number; first: number }>();
 
+/**
+ * Bloccato? Le chiavi "ip:" si bloccano dopo 5 errori; le chiavi "user:" dopo 20, così chi prova password
+ * a caso non può chiudere fuori l'amministratore con pochi tentativi da un altro dispositivo.
+ */
 export function loginLocked(key: string, now = Date.now()): boolean {
   const f = fails.get(key);
   if (!f) return false;
@@ -71,7 +76,7 @@ export function loginLocked(key: string, now = Date.now()): boolean {
     fails.delete(key);
     return false;
   }
-  return f.count >= MAX_FAILS;
+  return f.count >= (key.startsWith("user:") ? MAX_FAILS_PER_USER : MAX_FAILS);
 }
 export function loginFailed(key: string, now = Date.now()) {
   const f = fails.get(key);

@@ -28,6 +28,8 @@ export function db(): Sql {
       },
       transform: { undefined: null },
       onnotice: () => {},
+      // Anche se l'utente del database non le ha già impostate: query e transazioni appese si interrompono.
+      connection: { statement_timeout: 15_000, idle_in_transaction_session_timeout: 30_000 },
     });
   }
   return client;

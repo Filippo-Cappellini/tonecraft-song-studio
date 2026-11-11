@@ -62,8 +62,49 @@ async function handle(request: Request, env: unknown, ctx: unknown): Promise<Res
   }
 }
 
+// Corpo massimo di una richiesta (moduli e funzioni server): oltre si risponde 413, senza leggere il resto.
+export const MAX_BODY_BYTES = 1_000_000;
+
+/**
+ * Corpo limitato: si interrompe appena supera il massimo (anche se manca o mente l'header Content-Length).
+ * Il corpo originale si apre solo quando qualcuno lo legge davvero: il server Node rilegge la richiesta
+ * originale (es. per `redirect`) e un corpo già bloccato la farebbe fallire.
+ */
+function limitBody(request: Request, max: number): ReadableStream<Uint8Array> {
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  let size = 0;
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      reader ??= request.body!.getReader();
+      const { done, value } = await reader.read();
+      if (done) return controller.close();
+      size += value.byteLength;
+      if (size > max) {
+        controller.error(new Error("Richiesta troppo grande"));
+        await reader.cancel();
+        return;
+      }
+      controller.enqueue(value);
+    },
+    cancel(reason) {
+      return reader?.cancel(reason);
+    },
+  });
+}
+
+/** Risposte con dati dell'utente (funzioni server, accesso con Google): mai in cache. */
+const isPrivatePath = (path: string) => path.startsWith("/_serverFn") || path.startsWith("/api/");
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const url = new URL(request.url);
+    const declared = Number(request.headers.get("content-length") ?? 0);
+    if (declared > MAX_BODY_BYTES) {
+      return new Response("Richiesta troppo grande", {
+        status: 413,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    }
     // Nonce CSP nuovo per ogni richiesta, passato al router con un header interno
     // (un valore mandato dal client viene sempre sostituito).
     const nonce = makeNonce();
@@ -75,13 +116,17 @@ export default {
     const forwarded = new Request(request.url, {
       method: request.method,
       headers,
-      body: hasBody ? request.body : undefined,
+      body: hasBody && request.body ? limitBody(request, MAX_BODY_BYTES) : undefined,
       signal: request.signal,
       redirect: request.redirect,
       // Necessario per inoltrare un body in streaming.
       ...(hasBody ? { duplex: "half" } : {}),
     } as RequestInit);
-    const response = await handle(forwarded, env, ctx);
-    return SECURITY_HEADERS ? withSecurityHeaders(response, new URL(request.url), nonce) : response;
+    let response = await handle(forwarded, env, ctx);
+    if (isPrivatePath(url.pathname)) {
+      response = new Response(response.body, response);
+      response.headers.set("Cache-Control", "no-store");
+    }
+    return SECURITY_HEADERS ? withSecurityHeaders(response, url, nonce) : response;
   },
 };

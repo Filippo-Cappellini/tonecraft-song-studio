@@ -23,12 +23,14 @@ cd "$APP_DIR"
 
 echo "== Database in Docker (applica eventuali modifiche al docker-compose.yml; i dati restano nel volume)"
 docker compose -f deploy/raspberry/docker-compose.yml --env-file /etc/tonecraft/db.env up -d --wait
+# Utente dell'app con permessi minimi (lo crea anche sulle installazioni fatte prima di questa versione).
+bash deploy/raspberry/db-roles.sh
 
 sudo -u tonecraft -H npm ci --no-audit --no-fund
 sudo -u tonecraft -H env NODE_OPTIONS=--max-old-space-size=1536 npm run build:server
 
 echo "== Migrazioni e riavvio"
-sudo -u tonecraft -H node --env-file="$ENV_FILE" scripts/db-migrate.mjs
+node --env-file=/etc/tonecraft/migrate.env scripts/db-migrate.mjs
 install -m 0644 deploy/raspberry/tonecraft.service /etc/systemd/system/tonecraft.service
 install -m 0755 deploy/raspberry/db-wait.sh /usr/local/sbin/tonecraft-db-wait
 install -m 0755 deploy/raspberry/backup.sh /usr/local/sbin/tonecraft-backup

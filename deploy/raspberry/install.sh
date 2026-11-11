@@ -105,14 +105,16 @@ echo "== 6/9 Database in Docker"
 # Al primo avvio il container crea l'utente dell'app e il database (deploy/raspberry/db-init/01-tono.sh).
 "${COMPOSE[@]}" up -d --wait
 docker ps --filter name=tonecraft-db --format '  {{.Names}}: {{.Status}} ({{.Image}})'
+# Utente dell'app con i soli permessi sui dati; le credenziali del proprietario vanno in migrate.env (solo root).
+bash "$APP_DIR/deploy/raspberry/db-roles.sh"
 
 echo "== 7/9 Dipendenze e build (qualche minuto su un Raspberry)"
 cd "$APP_DIR"
 sudo -u tonecraft -H npm ci --no-audit --no-fund
 sudo -u tonecraft -H env NODE_OPTIONS=--max-old-space-size=1536 npm run build:server
 
-echo "== 8/9 Migrazioni del database"
-sudo -u tonecraft -H node --env-file="$ENV_FILE" scripts/db-migrate.mjs
+echo "== 8/9 Migrazioni del database (come proprietario delle tabelle; poi permessi minimi all'app)"
+node --env-file="$ENV_DIR/migrate.env" scripts/db-migrate.mjs
 
 echo "== 9/9 Servizio, backup notturno e nome in rete"
 install -m 0644 deploy/raspberry/tonecraft.service /etc/systemd/system/tonecraft.service
