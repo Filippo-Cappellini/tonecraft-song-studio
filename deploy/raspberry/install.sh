@@ -5,6 +5,8 @@
 # Uso, dalla cartella del progetto sul Raspberry:   sudo bash deploy/raspberry/install.sh
 # Si può rilanciare: non cancella dati e non cambia le password già create.
 set -euo pipefail
+# Nessuna domanda da apt (su Ubuntu needrestart aprirebbe una finestra e bloccherebbe lo script).
+export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
 
 APP_DIR=/opt/tonecraft
 ENV_DIR=/etc/tonecraft
@@ -120,6 +122,10 @@ install -m 0644 deploy/raspberry/tonecraft-backup.service /etc/systemd/system/to
 install -m 0644 deploy/raspberry/tonecraft-backup.timer /etc/systemd/system/tonecraft-backup.timer
 systemctl daemon-reload
 systemctl enable --now avahi-daemon
+# Firewall di Ubuntu (ufw), se attivo: apre la porta dell'app. Il database resta chiuso (ascolta solo su 127.0.0.1).
+if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
+  ufw allow "$PORT/tcp" comment "Tono"
+fi
 systemctl enable tonecraft.service tonecraft-backup.timer
 systemctl restart tonecraft.service
 systemctl start tonecraft-backup.timer

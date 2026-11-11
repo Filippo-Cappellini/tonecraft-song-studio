@@ -2,6 +2,8 @@
 # Aggiorna Tono sul Raspberry con una nuova versione del progetto (dati e configurazione restano).
 # Uso, dalla cartella della nuova versione:   sudo bash deploy/raspberry/update.sh
 set -euo pipefail
+# Nessuna domanda da apt (su Ubuntu needrestart aprirebbe una finestra e bloccherebbe lo script).
+export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
 
 APP_DIR=/opt/tonecraft
 ENV_FILE=/etc/tonecraft/tonecraft.env
