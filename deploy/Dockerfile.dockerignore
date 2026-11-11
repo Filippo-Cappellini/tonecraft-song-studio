@@ -1,4 +1,4 @@
-# Fuori dall'immagine: dipendenze e build locali, git, password e file di sviluppo.
+# Fuori dall'immagine (vale per deploy/Dockerfile): dipendenze e build locali, git, password e file di sviluppo.
 node_modules
 .output*
 .git

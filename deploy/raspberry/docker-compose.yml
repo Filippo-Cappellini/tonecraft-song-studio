@@ -56,7 +56,7 @@ services:
   # Applica le migrazioni come proprietario delle tabelle, poi dà all'app solo i permessi sui dati.
   migrate:
     <<: *hardening
-    build: { context: ../.., dockerfile: Dockerfile }
+    build: { context: ../.., dockerfile: deploy/Dockerfile }
     container_name: tonecraft-migrate
     restart: "no"
     depends_on:
@@ -64,12 +64,14 @@ services:
     environment:
       DATABASE_URL: postgres://tonecraft:${APP_DB_PASSWORD}@db:5432/tonecraft
     command: ["node", "scripts/db-migrate.mjs"]
+    # Gira e finisce: il controllo di salute dell'immagine (pensato per l'app) qui non serve.
+    healthcheck: { disable: true }
     read_only: true
     cap_drop: [ALL]
 
   app:
     <<: *hardening
-    build: { context: ../.., dockerfile: Dockerfile }
+    build: { context: ../.., dockerfile: deploy/Dockerfile }
     container_name: tonecraft-app
     restart: unless-stopped
     depends_on:

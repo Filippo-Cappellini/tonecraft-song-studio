@@ -197,7 +197,7 @@ Attenzione: `docker volume rm tonecraft-db` o `docker compose down -v` **cancell
   il catalogo si legge da PostgreSQL con funzioni server (`src/lib/catalog.functions.ts`) invece che da Supabase.
   La build normale (`npm run build`, la versione online) resta uguale; il gestionale lì mostra che non è attivo.
 - `scripts/db-migrate.mjs` applica i file di `drizzle/migrations` una volta sola (tabella `_tono_migrations`).
-- L'immagine dell'app si costruisce dal `Dockerfile` nella cartella principale (build per Node, poi solo `.output`,
+- L'immagine dell'app si costruisce da `deploy/Dockerfile` (build per Node, poi solo `.output`,
   migrazioni e script nell'immagine finale).
 - Variabili in `/etc/tonecraft/tono.env`: password del database (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`,
   `APP_RUNTIME_PASSWORD`), `DB_PORT`, `APP_PORT`, `APP_BIND`, `COOKIE_SECURE`, `TRUST_PROXY`, `REGISTRAZIONI`,

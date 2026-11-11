@@ -12,6 +12,17 @@ Tutto parte con **Docker Compose**: database, utenti del database, migrazioni e 
 
 ![Demo: home, libreria brani, pagina di un brano, accesso e gestionale](docs/demo.gif)
 
+## Screenshot
+
+![Home](docs/screenshot/01-home.png)
+
+| | |
+|---|---|
+| ![Libreria brani](docs/screenshot/02-brani.png) Libreria brani | ![Brano](docs/screenshot/03-brano.png) Pagina di un brano |
+| ![Accordatore](docs/screenshot/04-accordatore.png) Accordatore | ![Accedi](docs/screenshot/05-accedi.png) Accesso e registrazione |
+| ![Database](docs/screenshot/06-gestionale-database.png) Gestionale: panoramica del database | ![Tabella](docs/screenshot/07-gestionale-tabella.png) Gestionale: tabella dei brani |
+| ![Modifica](docs/screenshot/08-gestionale-modifica.png) Gestionale: modifica di una riga | ![Utenti](docs/screenshot/09-gestionale-utenti.png) Gestionale: utenti e registro |
+
 ## Indice
 
 - [Funzionalità](#funzionalità)
@@ -24,7 +35,6 @@ Tutto parte con **Docker Compose**: database, utenti del database, migrazioni e 
 - [Sicurezza](#sicurezza)
 - [Test](#test)
 - [Installazione su Raspberry Pi](#installazione-su-raspberry-pi)
-- [Screenshot](#screenshot)
 - [Sviluppi futuri](#sviluppi-futuri)
 - [Riferimenti](#riferimenti)
 
@@ -192,8 +202,9 @@ src/lib/server/        solo server: connessione al DB, sessioni e password, Goog
 src/test/              test Vitest
 drizzle/migrations/    schema e dati del database (SQL)
 scripts/               migrazioni e creazione utenti
+deploy/Dockerfile      immagine dell'app (build in due fasi)
 deploy/raspberry/      docker-compose dei servizi, script di installazione su Raspberry, backup
-Dockerfile             immagine dell'app (build in due fasi)
+docs/                  screenshot, GIF dimostrativa e roadmap
 docker-compose.yml     avvio di tutti i servizi dalla cartella principale
 ```
 
@@ -360,17 +371,6 @@ Guida completa: [deploy/raspberry/README.md](deploy/raspberry/README.md).
 ```bash
 sudo bash deploy/raspberry/install.sh
 ```
-
-## Screenshot
-
-![Home](docs/screenshot/01-home.png)
-
-| | |
-|---|---|
-| ![Libreria brani](docs/screenshot/02-brani.png) Libreria brani | ![Brano](docs/screenshot/03-brano.png) Pagina di un brano |
-| ![Accordatore](docs/screenshot/04-accordatore.png) Accordatore | ![Accedi](docs/screenshot/05-accedi.png) Accesso e registrazione |
-| ![Database](docs/screenshot/06-gestionale-database.png) Gestionale: panoramica del database | ![Tabella](docs/screenshot/07-gestionale-tabella.png) Gestionale: tabella dei brani |
-| ![Modifica](docs/screenshot/08-gestionale-modifica.png) Gestionale: modifica di una riga | ![Utenti](docs/screenshot/09-gestionale-utenti.png) Gestionale: utenti e registro |
 
 ## Sviluppi futuri
 

@@ -1,4 +1,5 @@
 # Immagine dell'app Tono per il Raspberry (build per Node con il database PostgreSQL locale).
+# Le esclusioni dalla build sono in deploy/Dockerfile.dockerignore (accanto a questo file).
 # La usa deploy/raspberry/docker-compose.yml (servizi "app" e "migrate"); funziona su arm64 e amd64.
 
 # --- Build ----------------------------------------------------------------------------------------
