@@ -56,7 +56,6 @@ services:
   # Applica le migrazioni come proprietario delle tabelle, poi dà all'app solo i permessi sui dati.
   migrate:
     <<: *hardening
-    image: tonecraft-app:latest
     build: { context: ../.., dockerfile: Dockerfile }
     container_name: tonecraft-migrate
     restart: "no"
@@ -70,7 +69,6 @@ services:
 
   app:
     <<: *hardening
-    image: tonecraft-app:latest
     build: { context: ../.., dockerfile: Dockerfile }
     container_name: tonecraft-app
     restart: unless-stopped
