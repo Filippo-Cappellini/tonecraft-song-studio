@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,13 +12,15 @@ import {
   Panel,
   useStaff,
 } from "@/components/gestionale/kit";
-import { changeOwnPassword } from "@/lib/staff.functions";
+import { changeOwnPassword, getMyAccount } from "@/lib/staff.functions";
 import { PASSWORD_HINT, ROLES } from "@/lib/staff-roles";
 
 export const Route = createFileRoute("/gestionale/account")({ component: Account });
 
 function Account() {
   const { user } = useStaff();
+  const account = useQuery({ queryKey: ["gestionale", "account"], queryFn: () => getMyAccount() });
+  const hasPassword = account.data?.hasPassword ?? true;
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [repeat, setRepeat] = useState("");
@@ -36,6 +39,7 @@ function Account() {
       setCurrent("");
       setNext("");
       setRepeat("");
+      void account.refetch();
     } catch (err) {
       setError(errorText(err));
     }
@@ -49,18 +53,32 @@ function Account() {
           user ? `${user.full_name} · ${user.username} · ${ROLES[user.role].label}` : undefined
         }
       />
-      <Panel title="Cambia password" className="max-w-md">
+      {account.data && (
+        <Panel title="Accesso" className="mb-6 max-w-md">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt className="text-muted-foreground">Email</dt>
+            <dd>{account.data.email ?? "—"}</dd>
+            <dt className="text-muted-foreground">Google</dt>
+            <dd>{account.data.google ? "Collegato" : "Non collegato"}</dd>
+            <dt className="text-muted-foreground">Password</dt>
+            <dd>{account.data.hasPassword ? "Impostata" : "Nessuna (entri solo con Google)"}</dd>
+          </dl>
+        </Panel>
+      )}
+      <Panel title={hasPassword ? "Cambia password" : "Crea una password"} className="max-w-md">
         <form onSubmit={submit} className="space-y-3">
-          <Field label="Password attuale">
-            <input
-              className={inputClass}
-              type="password"
-              autoComplete="current-password"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-              required
-            />
-          </Field>
+          {hasPassword && (
+            <Field label="Password attuale">
+              <input
+                className={inputClass}
+                type="password"
+                autoComplete="current-password"
+                value={current}
+                onChange={(e) => setCurrent(e.target.value)}
+                required
+              />
+            </Field>
+          )}
           <Field label="Nuova password" help={PASSWORD_HINT}>
             <input
               className={inputClass}

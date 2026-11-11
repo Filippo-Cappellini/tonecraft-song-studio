@@ -33,3 +33,6 @@ dist-ssr
 
 # Copia locale della build di Lovable
 .output.lovable-bak
+
+# Password del database Docker per lo sviluppo
+.env.db

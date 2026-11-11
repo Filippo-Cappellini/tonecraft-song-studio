@@ -25,6 +25,13 @@ export const ROLES: Record<
   },
 };
 
+/** Ruolo dato agli account che le persone creano da sole (registrazione o Google). */
+export const SIGNUP_ROLE: Role = "lettura";
+
+/** Registrazioni aperte, salvo REGISTRAZIONI=chiuse nell'ambiente del server. */
+export const signupOpen = (env: Record<string, string | undefined>) =>
+  env["REGISTRAZIONI"]?.trim() !== "chiuse";
+
 export const ROLE_IDS = Object.keys(ROLES) as Role[];
 
 export const isRole = (v: unknown): v is Role => typeof v === "string" && v in ROLES;

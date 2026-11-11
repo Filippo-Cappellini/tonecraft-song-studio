@@ -147,3 +147,64 @@ describe("password", () => {
     expect(loginLocked("ip:altro", t0)).toBe(false);
   });
 });
+
+describe("account e accesso con Google", () => {
+  it("l'accesso con Google si accende solo con chiavi e indirizzo https (o localhost)", async () => {
+    const { googleConfig } = await import("@/lib/google-auth");
+    const keys = { GOOGLE_CLIENT_ID: "id.apps.googleusercontent.com", GOOGLE_CLIENT_SECRET: "segreto" };
+    expect(googleConfig({})).toBeNull();
+    expect(googleConfig({ ...keys, PUBLIC_URL: "http://tono.local:3000" })).toBeNull();
+    expect(googleConfig({ ...keys, PUBLIC_URL: "https://tono.example.it/qualcosa" })?.publicUrl).toBe("https://tono.example.it");
+    expect(googleConfig({ ...keys, PUBLIC_URL: "http://localhost:3000" })?.publicUrl).toBe("http://localhost:3000");
+  });
+
+  it("l'indirizzo di Google chiede solo openid/email/profilo con PKCE, state e nonce", async () => {
+    const { authUrl } = await import("@/lib/google-auth");
+    const u = new URL(authUrl({ clientId: "cid", clientSecret: "x", publicUrl: "https://tono.example.it" }, { state: "s1", nonce: "n1", codeChallenge: "c1" }));
+    expect(u.origin).toBe("https://accounts.google.com");
+    expect(Object.fromEntries(u.searchParams)).toMatchObject({
+      client_id: "cid", redirect_uri: "https://tono.example.it/api/google/ritorno", response_type: "code",
+      scope: "openid email profile", state: "s1", nonce: "n1", code_challenge: "c1", code_challenge_method: "S256",
+    });
+    expect(u.searchParams.has("client_secret")).toBe(false);
+  });
+
+  it("accetta solo id_token di Google per questa app, non scaduti, con il nonce giusto ed email verificata", async () => {
+    const { checkIdToken, decodeJwtPayload } = await import("@/lib/google-auth");
+    const now = 1_800_000_000;
+    const good = { iss: "https://accounts.google.com", aud: "cid", exp: now + 300, nonce: "n1", email_verified: true, sub: "1234567890", email: "Niccolò.Rossi@Gmail.com", name: "Niccolò Rossi" };
+    const jwt = (o: object) => `x.${Buffer.from(JSON.stringify(o)).toString("base64url")}.firma`;
+    const exp = { clientId: "cid", nonce: "n1", nowSec: now };
+    expect(checkIdToken(decodeJwtPayload(jwt(good)), exp)).toEqual({ sub: "1234567890", email: "niccolò.rossi@gmail.com", name: "Niccolò Rossi" });
+    expect(checkIdToken(decodeJwtPayload(jwt({ ...good, aud: "altra-app" })), exp)).toEqual({ error: "destinatario" });
+    expect(checkIdToken(decodeJwtPayload(jwt({ ...good, iss: "https://evil.example" })), exp)).toEqual({ error: "emittente" });
+    expect(checkIdToken(decodeJwtPayload(jwt({ ...good, exp: now - 3600 })), exp)).toEqual({ error: "scaduto" });
+    expect(checkIdToken(decodeJwtPayload(jwt({ ...good, nonce: "altro" })), exp)).toEqual({ error: "nonce" });
+    expect(checkIdToken(decodeJwtPayload(jwt({ ...good, email_verified: false })), exp)).toEqual({ error: "email non verificata" });
+    expect(checkIdToken(decodeJwtPayload("non-un-token"), exp)).toEqual({ error: "token illeggibile" });
+  });
+
+  it("crea un nome utente valido dall'email", async () => {
+    const { usernameFromEmail } = await import("@/lib/google-auth");
+    expect(usernameFromEmail("Mario.Rossi+chitarra@gmail.com")).toBe("mario.rossi");
+    expect(usernameFromEmail("é@x.it")).toMatch(USERNAME_RE);
+    expect(usernameFromEmail("_.ab.-@x.it")).toMatch(USERNAME_RE);
+    expect(usernameFromEmail(`${"a".repeat(60)}@x.it`)).toMatch(USERNAME_RE);
+  });
+
+  it("i nuovi account sono in sola lettura e le registrazioni si possono chiudere", async () => {
+    const { SIGNUP_ROLE, signupOpen } = await import("@/lib/staff-roles");
+    expect(SIGNUP_ROLE).toBe("lettura");
+    expect(can(SIGNUP_ROLE, "catalogo")).toBe(false);
+    expect(signupOpen({})).toBe(true);
+    expect(signupOpen({ REGISTRAZIONI: "chiuse" })).toBe(false);
+  });
+
+  it("limita le registrazioni dallo stesso indirizzo", async () => {
+    const { overLimit } = await import("@/lib/server/auth.server");
+    const t = 5_000_000;
+    for (let i = 0; i < 5; i++) expect(overLimit("signup:test", 5, 3_600_000, t + i)).toBe(false);
+    expect(overLimit("signup:test", 5, 3_600_000, t + 10)).toBe(true);
+    expect(overLimit("signup:test", 5, 3_600_000, t + 3_700_000)).toBe(false);
+  });
+});

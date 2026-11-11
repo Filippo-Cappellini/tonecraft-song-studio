@@ -38,7 +38,9 @@ export async function hashPassword(password: string): Promise<string> {
   return `scrypt$${N}$${R}$${P}$${salt.toString("base64")}$${key.toString("base64")}`;
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+export async function verifyPassword(password: string, stored: string | null): Promise<boolean> {
+  // Account solo Google: nessuna password, ma il calcolo si fa lo stesso (tempi uguali).
+  if (!stored) return fakeVerify(password);
   const parts = stored.split("$");
   if (parts.length !== 6 || parts[0] !== "scrypt") return false;
   const [n, r, p] = parts.slice(1, 4).map(Number) as [number, number, number];
@@ -79,6 +81,20 @@ export function loginFailed(key: string, now = Date.now()) {
 }
 export const loginSucceeded = (key: string) => fails.delete(key);
 
+// Limite generico (es. registrazioni per indirizzo IP): al massimo `max` volte per finestra di tempo.
+const hits = new Map<string, number[]>();
+export function overLimit(key: string, max: number, windowMs: number, now = Date.now()): boolean {
+  const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
+  if (recent.length >= max) {
+    hits.set(key, recent);
+    return true;
+  }
+  recent.push(now);
+  hits.set(key, recent);
+  if (hits.size > 10_000) hits.clear();
+  return false;
+}
+
 export function clientIp(): string {
   try {
     return getRequestIP({ xForwardedFor: process.env["TRUST_PROXY"] === "1" }) ?? "?";
@@ -92,7 +108,7 @@ const COOKIE = "tono_staff";
 const SESSION_HOURS = 12;
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
-function secureCookie(): boolean {
+export function secureCookie(): boolean {
   if (process.env["COOKIE_SECURE"] === "1") return true;
   try {
     return new URL(getRequest().url).protocol === "https:";
@@ -101,13 +117,24 @@ function secureCookie(): boolean {
   }
 }
 
-export async function startSession(userId: string): Promise<void> {
+/** Crea la sessione nel database e restituisce il token da mettere nel cookie. */
+export async function newSessionToken(userId: string): Promise<string> {
   const token = randomBytes(32).toString("base64url");
   const sql = db();
   await sql`delete from staff_sessions where expires_at < now()`;
   await sql`insert into staff_sessions (token_hash, user_id, expires_at)
             values (${sha256(token)}, ${userId}, now() + ${`${SESSION_HOURS} hours`}::interval)`;
   await sql`update staff_users set last_login_at = now() where id = ${userId}`;
+  return token;
+}
+
+/** Header Set-Cookie della sessione, per le risposte costruite a mano (ritorno da Google). */
+export function sessionCookieHeader(token: string, secure: boolean): string {
+  return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_HOURS * 3600}${secure ? "; Secure" : ""}`;
+}
+
+export async function startSession(userId: string): Promise<void> {
+  const token = await newSessionToken(userId);
   setCookie(COOKIE, token, {
     httpOnly: true,
     sameSite: "strict",

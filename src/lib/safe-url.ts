@@ -11,7 +11,11 @@ export function safeHttpsUrl(value: unknown, allowedHosts?: readonly string[]): 
     return null;
   }
   if (url.protocol !== "https:" || url.username || url.password) return null;
-  if (allowedHosts && !allowedHosts.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`))) return null;
+  if (
+    allowedHosts &&
+    !allowedHosts.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`))
+  )
+    return null;
   return url.href;
 }
 
@@ -19,7 +23,10 @@ export function safeHttpsUrl(value: unknown, allowedHosts?: readonly string[]): 
 export function cleanText(value: unknown, max: number): string {
   if (typeof value !== "string") return "";
   // eslint-disable-next-line no-control-regex
-  return value.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
+  return value
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .trim()
+    .slice(0, max);
 }
 
 /** Come inputObject, ma con i soli campi indicati (accesso con il punto, valori ancora da controllare). */
@@ -38,14 +45,32 @@ export function inputObject(d: unknown): Record<string, unknown> {
  */
 export async function fetchExternal(
   url: string,
-  { allowedHosts, maxBytes = 1_000_000, timeoutMs = 6000, headers }: { allowedHosts: readonly string[]; maxBytes?: number; timeoutMs?: number; headers?: Record<string, string> },
+  {
+    allowedHosts,
+    maxBytes = 1_000_000,
+    timeoutMs = 6000,
+    headers,
+    form,
+  }: {
+    allowedHosts: readonly string[];
+    maxBytes?: number;
+    timeoutMs?: number;
+    headers?: Record<string, string>;
+    /** Dati di un modulo da inviare in POST (es. scambio del codice OAuth). Senza: GET. */
+    form?: URLSearchParams;
+  },
 ): Promise<{ ok: boolean; text: string }> {
   const signal = AbortSignal.timeout(timeoutMs);
   let target = safeHttpsUrl(url, allowedHosts);
   let res: Response | null = null;
   // I redirect si seguono a mano (massimo 3) per controllare il dominio a ogni passaggio.
   for (let hop = 0; target && hop < 4; hop++) {
-    res = await fetch(target, { ...(headers ? { headers } : {}), redirect: "manual", signal });
+    res = await fetch(target, {
+      ...(headers ? { headers } : {}),
+      ...(form ? { method: "POST", body: form } : {}),
+      redirect: "manual",
+      signal,
+    });
     if (res.status < 300 || res.status >= 400) break;
     await res.body?.cancel();
     const next = res.headers.get("location");
@@ -79,7 +104,10 @@ export async function fetchExternal(
 }
 
 /** Come fetchExternal, ma interpreta la risposta come JSON (null se non lo è). */
-export async function fetchExternalJson<T>(url: string, opts: Parameters<typeof fetchExternal>[1]): Promise<T | null> {
+export async function fetchExternalJson<T>(
+  url: string,
+  opts: Parameters<typeof fetchExternal>[1],
+): Promise<T | null> {
   const { ok, text } = await fetchExternal(url, opts);
   if (!ok) return null;
   try {

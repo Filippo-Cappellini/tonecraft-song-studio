@@ -1,0 +1,35 @@
+# Database di Tono in Docker: PostgreSQL 15 (immagine ufficiale, anche per Raspberry arm64).
+# Sul Raspberry lo avvia install.sh:
+#   docker compose -f deploy/raspberry/docker-compose.yml --env-file /etc/tonecraft/db.env up -d --wait
+# Sul PC, per sviluppare:  npm run db:up   (usa .env.db, vedi .env.db.example)
+name: tonecraft
+
+services:
+  db:
+    image: postgres:15
+    container_name: tonecraft-db
+    restart: unless-stopped
+    environment:
+      # Superutente del database (solo per amministrazione e backup).
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?manca POSTGRES_PASSWORD nel file di ambiente}
+      # Password dell'utente "tonecraft" usato dall'app (creato da db-init/01-tono.sh al primo avvio).
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?manca APP_DB_PASSWORD nel file di ambiente}
+      TZ: Europe/Rome
+    ports:
+      # Solo dal computer stesso: il database non è raggiungibile dalla rete.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      # I dati restano nel volume anche se il container viene ricreato o aggiornato.
+      - tonecraft-db:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Via TCP: durante la prima inizializzazione il server ascolta solo sul socket, quindi non risulta pronto.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d tonecraft -q"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    shm_size: 128mb
+
+volumes:
+  tonecraft-db:
+    name: tonecraft-db

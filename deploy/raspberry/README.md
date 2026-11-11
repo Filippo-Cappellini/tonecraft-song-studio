@@ -1,6 +1,7 @@
 # Tono sul Raspberry (app + gestionale)
 
-Il Raspberry esegue tutto da solo: l'app, il gestionale e un database PostgreSQL locale.
+Il Raspberry esegue tutto da solo: l'app, il gestionale e il database **PostgreSQL in Docker**
+(container `tonecraft-db`, dati nel volume Docker `tonecraft-db`).
 Non serve internet per usarlo (solo per copertine, anteprime audio, notizie e link ai negozi).
 È raggiungibile dalla rete locale, non da internet.
 
@@ -36,13 +37,14 @@ Con Raspberry Pi Imager imposta già nome host (es. `tono`), utente, password, W
    cd ~/tonecraft-song-studio-main
    sudo bash deploy/raspberry/install.sh
    ```
-   Lo script installa PostgreSQL e Node.js 22, crea il database con una password casuale, compila l'app,
-   applica le migrazioni (catalogo completo incluso), avvia il servizio e attiva il backup notturno.
+   Lo script installa Docker (dal repository ufficiale) e Node.js 22, avvia il database in Docker con password
+   casuali, compila l'app, applica le migrazioni (catalogo completo incluso), avvia il servizio e attiva il backup notturno.
    Alla fine chiede nome utente e password del **primo amministratore** del gestionale.
 3. Da un PC o telefono nella stessa rete apri:
    - App: `http://tono.local:3000`
-   - Per lo staff: pulsante **Accedi** nel menu in alto. Dopo l'accesso lo stesso pulsante diventa il menu
-     dell'utente, con solo le sezioni del gestionale che il suo ruolo può aprire, e «Esci».
+   - Pulsante **Accedi** nel menu in alto: si entra, si **crea un account** oppure (se attivo) si usa
+     **Continua con Google**. Dopo l'accesso lo stesso pulsante diventa il menu dell'utente, con solo le sezioni
+     che il suo ruolo può aprire, e «Esci».
 
 Se `tono.local` non si apre (alcuni Android), usa l'indirizzo IP che lo script stampa alla fine.
 
@@ -65,6 +67,42 @@ Il gestionale è il **database dell'app**: qui sono salvati tutti i dati che l'a
   della pagina dei risultati, metti `{q}` al posto della parola cercata e salvalo nella tabella *Negozi online*.
 - Ogni modifica resta nel **registro** (Utenti e registro).
 
+## Account
+
+- **Crea account** (pagina Accedi): nome utente, nome, email facoltativa e password. Il nuovo account è in
+  **sola lettura**; l'amministratore può cambiargli ruolo da *Utenti e registro*. Al massimo 5 registrazioni
+  all'ora dallo stesso dispositivo.
+- Per chiudere le registrazioni: `REGISTRAZIONI=chiuse` in `/etc/tonecraft/tonecraft.env`, poi
+  `sudo systemctl restart tonecraft`. Gli account li crea allora solo l'amministratore.
+- Chi entra con Google e non ha ancora un account ne riceve uno in sola lettura (nome utente preso dall'email).
+  Se esiste già un account con la stessa email, Google viene collegato a quello. Da *Il mio account* si può anche
+  creare una password per entrare senza Google.
+
+### Accesso con Google
+
+Google permette il suo accesso solo da indirizzi **https con un dominio vero** (oppure `http://localhost`).
+Con `http://tono.local:3000` in rete locale **non funziona**: il pulsante resta nascosto finché non è configurato.
+Per attivarlo serve quindi un dominio con HTTPS che porti al Raspberry (per esempio un Cloudflare Tunnel o un
+proxy HTTPS con certificato), che però rende l'app raggiungibile anche da internet. Poi:
+
+1. Vai su [console.cloud.google.com](https://console.cloud.google.com) → crea un progetto → *API e servizi* →
+   *Schermata consenso OAuth* (tipo Esterno, nome «Tono») → *Credenziali* → *Crea credenziali* →
+   *ID client OAuth* → tipo **Applicazione web**.
+2. In *URI di reindirizzamento autorizzati* metti `https://<il-tuo-dominio>/api/google/ritorno`.
+3. Copia ID client e segreto in `/etc/tonecraft/tonecraft.env`:
+   ```
+   PUBLIC_URL=https://<il-tuo-dominio>
+   GOOGLE_CLIENT_ID=....apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=....
+   COOKIE_SECURE=1
+   TRUST_PROXY=1
+   ```
+4. `sudo systemctl restart tonecraft`: nella pagina Accedi compare «Continua con Google».
+
+L'app chiede a Google solo nome ed email (verificata), con controlli `state`, `nonce` e PKCE; il segreto resta sul server.
+
+### Password dimenticata
+
 Altri utenti si creano dal gestionale (Utenti e registro → Nuovo utente). Se l'amministratore dimentica la password:
 ```bash
 cd /opt/tonecraft
@@ -79,13 +117,20 @@ sudo systemctl status tonecraft          # stato del servizio
 sudo journalctl -u tonecraft -f          # log in tempo reale
 sudo systemctl restart tonecraft         # riavvio
 sudo /usr/local/sbin/tonecraft-backup    # backup subito
-ls /var/backups/tonecraft                # backup (ogni notte alle 3:15, tenuti gli ultimi 14)
+sudo ls /var/backups/tonecraft           # backup (ogni notte alle 3:15, tenuti gli ultimi 14)
+sudo docker ps                           # il container tonecraft-db deve essere "healthy"
+sudo docker logs tonecraft-db --tail 50  # log del database
+sudo docker exec -it tonecraft-db psql -U postgres -d tonecraft   # console SQL
 ```
+
+Il database parte da solo con Docker a ogni accensione (`restart: unless-stopped`) e l'app lo aspetta prima di
+avviarsi. Le password del database sono in `/etc/tonecraft/db.env` (leggibile solo da root). Il database ascolta
+solo su `127.0.0.1:5432`: dalla rete non si raggiunge.
 
 Ripristino di un backup (sovrascrive i dati attuali):
 ```bash
 sudo systemctl stop tonecraft
-sudo -u postgres pg_restore --clean --if-exists -d tonecraft /var/backups/tonecraft/<file>.dump
+sudo sh -c 'docker exec -i tonecraft-db pg_restore -U postgres --clean --if-exists -d tonecraft < /var/backups/tonecraft/<file>.dump'
 sudo systemctl start tonecraft
 ```
 Copia ogni tanto i backup fuori dal Raspberry (chiavetta o PC): se la scheda SD si rompe, si perdono con lei.
@@ -96,11 +141,15 @@ Copia la nuova versione del progetto sul Raspberry e lancia, dalla sua cartella:
 ```bash
 sudo bash deploy/raspberry/update.sh
 ```
-Fa un backup, ricompila, applica le nuove migrazioni e riavvia. Dati, utenti e password restano.
+Fa un backup, aggiorna il container del database se il `docker-compose.yml` è cambiato, ricompila, applica le
+nuove migrazioni e riavvia. Dati, utenti e password restano (sono nel volume Docker `tonecraft-db`).
+
+Attenzione: `docker volume rm tonecraft-db` o `docker compose down -v` **cancellano tutti i dati**.
 
 ## Sicurezza e limiti (rete locale in http)
 
-- Il database ascolta solo sul Raspberry; dalla rete si raggiunge solo l'app (porta 3000).
+- Il database (in Docker) ascolta solo sul Raspberry; dalla rete si raggiunge solo l'app (porta 3000).
+  L'app usa un utente del database senza privilegi di amministrazione.
 - Le password sono salvate con scrypt; dopo 5 tentativi sbagliati l'accesso si blocca per 10 minuti.
 - Il servizio gira con un utente senza privilegi e con le protezioni di systemd.
 - In **http** il browser non permette alcune funzioni: **l'accordatore (microfono) e l'installazione come app
@@ -117,4 +166,10 @@ Fa un backup, ricompila, applica le nuove migrazioni e riavvia. Dati, utenti e p
   il catalogo si legge da PostgreSQL con funzioni server (`src/lib/catalog.functions.ts`) invece che da Supabase.
   La build normale (`npm run build`, quella di Lovable) resta uguale; il gestionale lì mostra che non è attivo.
 - `scripts/db-migrate.mjs` applica i file di `drizzle/migrations` una volta sola (tabella `_tono_migrations`).
-- Variabili in `/etc/tonecraft/tonecraft.env`: `DATABASE_URL`, `HOST`, `PORT`, `COOKIE_SECURE`, `TRUST_PROXY`.
+- Variabili in `/etc/tonecraft/tonecraft.env`: `DATABASE_URL`, `HOST`, `PORT`, `COOKIE_SECURE`, `TRUST_PROXY`,
+  `REGISTRAZIONI`, `PUBLIC_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+- **Sul PC** si usa lo stesso database in Docker: copia `.env.db.example` in `.env.db` (cambia le password), poi
+  `npm run db:up` (avvia il container), `npm run db:migrate:dev` (crea le tabelle) e
+  `node --env-file=.env.db scripts/crea-utente.mjs --username admin --nome "Admin" --ruolo admin`.
+  Per avviare l'app sul database locale: `npm run build:server`, poi
+  `node --env-file=.env.db .output/server/index.mjs` (porta 3000).

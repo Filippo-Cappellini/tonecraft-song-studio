@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { cleanText, inputFields, inputObject } from "./safe-url";
-import { isRole, passwordProblem, USERNAME_RE } from "./staff-roles";
+import { isRole, passwordProblem, SIGNUP_ROLE, signupOpen, USERNAME_RE } from "./staff-roles";
+import { EMAIL_RE } from "./google-auth";
+import { googleEnabled } from "./server/google.server";
 import { db, dbErrorMessage, hasLocalDb } from "./server/db.server";
 import {
   audit,
@@ -13,6 +15,7 @@ import {
   loginLocked,
   loginSucceeded,
   endOtherSessions,
+  overLimit,
   requireStaff,
   startSession,
   verifyPassword,
@@ -21,14 +24,86 @@ import {
 
 // Funzioni server dell'accesso al gestionale e della gestione utenti.
 
-export type StaffStatus = { configured: boolean; user: Staff | null };
+export type StaffStatus = {
+  configured: boolean;
+  user: Staff | null;
+  signupOpen: boolean;
+  google: boolean;
+};
 
 export const getStaffStatus = createServerFn({ method: "GET" }).handler(
   async (): Promise<StaffStatus> => {
-    if (!hasLocalDb()) return { configured: false, user: null };
-    return { configured: true, user: await currentStaff() };
+    if (!hasLocalDb()) return { configured: false, user: null, signupOpen: false, google: false };
+    return {
+      configured: true,
+      user: await currentStaff(),
+      signupOpen: signupOpen(process.env),
+      google: googleEnabled(),
+    };
   },
 );
+
+/** Registrazione: account nuovo in sola lettura, poi accesso immediato. */
+export const staffSignup = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => {
+    const o = inputFields<"username" | "full_name" | "email" | "password">(d);
+    return {
+      username: cleanText(o.username, 40).toLowerCase(),
+      full_name: cleanText(o.full_name, 120),
+      email: cleanText(o.email, 254).toLowerCase(),
+      password: typeof o.password === "string" ? o.password.slice(0, 300) : "",
+    };
+  })
+  .handler(async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
+    if (!hasLocalDb()) return { ok: false, error: "Account non disponibili su questo server." };
+    if (!signupOpen(process.env))
+      return {
+        ok: false,
+        error: "Le registrazioni sono chiuse: chiedi un account all'amministratore.",
+      };
+    if (!USERNAME_RE.test(data.username))
+      return { ok: false, error: "Nome utente: 3-32 caratteri tra minuscole, cifre, . _ -" };
+    if (!data.full_name) return { ok: false, error: "Scrivi nome e cognome." };
+    if (data.email && !EMAIL_RE.test(data.email)) return { ok: false, error: "Email non valida." };
+    const problem = passwordProblem(data.password, data.username);
+    if (problem) return { ok: false, error: problem };
+    // Al massimo 5 account all'ora dallo stesso indirizzo.
+    if (overLimit(`signup:${clientIp()}`, 5, 60 * 60 * 1000))
+      return { ok: false, error: "Troppe registrazioni. Riprova più tardi." };
+    try {
+      const [row] = await db()<{ id: string }[]>`
+        insert into staff_users (username, full_name, role, email, password_hash)
+        values (${data.username}, ${data.full_name}, ${SIGNUP_ROLE}, ${data.email || null}, ${await hashPassword(data.password)})
+        returning id`;
+      await startSession(row!.id);
+      await audit(
+        { id: row!.id, username: data.username },
+        "registrazione",
+        "utente",
+        row!.id,
+        clientIp(),
+      );
+      return { ok: true };
+    } catch (e) {
+      const code = typeof e === "object" && e && "code" in e ? (e as { code: string }).code : "";
+      if (code === "23505") return { ok: false, error: "Nome utente o email già in uso." };
+      return { ok: false, error: dbErrorMessage(e) };
+    }
+  });
+
+/** Dati del proprio account (per la pagina "Il mio account"). */
+export const getMyAccount = createServerFn({ method: "GET" }).handler(async () => {
+  const me = await requireStaff();
+  const [row] = await db()<{ email: string | null; has_password: boolean; google: boolean }[]>`
+    select email, password_hash is not null as has_password, google_sub is not null as google
+    from staff_users where id = ${me.id}`;
+  return {
+    ...me,
+    email: row?.email ?? null,
+    hasPassword: !!row?.has_password,
+    google: !!row?.google,
+  };
+});
 
 export const staffLogin = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => {
@@ -44,7 +119,7 @@ export const staffLogin = createServerFn({ method: "POST" })
     if (keys.some((k) => loginLocked(k)))
       return { ok: false, error: "Troppi tentativi. Riprova tra 10 minuti." };
     const rows = await db()<
-      { id: string; username: string; password_hash: string; active: boolean }[]
+      { id: string; username: string; password_hash: string | null; active: boolean }[]
     >`
       select id, username, password_hash, active from staff_users where username = ${data.username}`;
     const u = rows[0];
@@ -85,9 +160,13 @@ export const changeOwnPassword = createServerFn({ method: "POST" })
     if (problem) return { ok: false as const, error: problem };
     const sql = db();
     const [row] = await sql<
-      { password_hash: string }[]
+      { password_hash: string | null }[]
     >`select password_hash from staff_users where id = ${me.id}`;
-    if (!row || !(await verifyPassword(data.current, row.password_hash)))
+    // Chi è entrato solo con Google non ha una password attuale: può crearne una.
+    if (
+      !row ||
+      (row.password_hash !== null && !(await verifyPassword(data.current, row.password_hash)))
+    )
       return { ok: false as const, error: "La password attuale non è corretta." };
     await sql`update staff_users set password_hash = ${await hashPassword(data.next)} where id = ${me.id}`;
     // Le altre sessioni aperte con la vecchia password vengono chiuse; questa resta valida.
@@ -99,6 +178,8 @@ export const changeOwnPassword = createServerFn({ method: "POST" })
 // --- Utenti (solo amministratore) ---------------------------------------------------------------
 export type StaffUserRow = Staff & {
   active: boolean;
+  email: string | null;
+  google: boolean;
   created_at: string;
   last_login_at: string | null;
 };
@@ -106,7 +187,9 @@ export type StaffUserRow = Staff & {
 export const listStaffUsers = createServerFn({ method: "GET" }).handler(async () => {
   await requireStaff("admin");
   return db()<StaffUserRow[]>`
-    select id, username, full_name, role, active, created_at::text, last_login_at::text from staff_users order by active desc, username`;
+    select id, username, full_name, role, active, email, google_sub is not null as google,
+           created_at::text, last_login_at::text
+    from staff_users order by active desc, username`;
 });
 
 export const saveStaffUser = createServerFn({ method: "POST" })

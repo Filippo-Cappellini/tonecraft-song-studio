@@ -79,6 +79,8 @@ function Utenti() {
                     <div className="font-medium">{u.full_name}</div>
                     <div className="text-xs text-muted-foreground">
                       {u.username}
+                      {u.email ? ` · ${u.email}` : ""}
+                      {u.google ? " · Google" : ""}
                       {u.active ? "" : " · disattivato"}
                     </div>
                   </td>

@@ -31,6 +31,8 @@ import { Route as GestionaleAccountRouteImport } from './routes/gestionale.accou
 import { Route as GestionaleNegoziRouteImport } from './routes/gestionale.negozi'
 import { Route as GestionaleUtentiRouteImport } from './routes/gestionale.utenti'
 import { Route as StrumentoIdRouteImport } from './routes/strumento.$id'
+import { Route as ApiGoogleAccediRouteImport } from './routes/api.google.accedi'
+import { Route as ApiGoogleRitornoRouteImport } from './routes/api.google.ritorno'
 import { Route as GestionaleTabelleTableRouteImport } from './routes/gestionale.tabelle.$table'
 
 const IndexRoute = IndexRouteImport.update({
@@ -143,6 +145,16 @@ const StrumentoIdRoute = StrumentoIdRouteImport.update({
   path: '/strumento/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGoogleAccediRoute = ApiGoogleAccediRouteImport.update({
+  id: '/api/google/accedi',
+  path: '/api/google/accedi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGoogleRitornoRoute = ApiGoogleRitornoRouteImport.update({
+  id: '/api/google/ritorno',
+  path: '/api/google/ritorno',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GestionaleTabelleTableRoute = GestionaleTabelleTableRouteImport.update({
   id: '/tabelle/$table',
   path: '/tabelle/$table',
@@ -172,6 +184,8 @@ export interface FileRoutesByFullPath {
   '/brani/': typeof BraniIndexRoute
   '/corsi/': typeof CorsiIndexRoute
   '/gestionale/': typeof GestionaleIndexRoute
+  '/api/google/accedi': typeof ApiGoogleAccediRoute
+  '/api/google/ritorno': typeof ApiGoogleRitornoRoute
   '/gestionale/tabelle/$table': typeof GestionaleTabelleTableRoute
 }
 export interface FileRoutesByTo {
@@ -196,6 +210,8 @@ export interface FileRoutesByTo {
   '/brani': typeof BraniIndexRoute
   '/corsi': typeof CorsiIndexRoute
   '/gestionale': typeof GestionaleIndexRoute
+  '/api/google/accedi': typeof ApiGoogleAccediRoute
+  '/api/google/ritorno': typeof ApiGoogleRitornoRoute
   '/gestionale/tabelle/$table': typeof GestionaleTabelleTableRoute
 }
 export interface FileRoutesById {
@@ -222,6 +238,8 @@ export interface FileRoutesById {
   '/brani/': typeof BraniIndexRoute
   '/corsi/': typeof CorsiIndexRoute
   '/gestionale/': typeof GestionaleIndexRoute
+  '/api/google/accedi': typeof ApiGoogleAccediRoute
+  '/api/google/ritorno': typeof ApiGoogleRitornoRoute
   '/gestionale/tabelle/$table': typeof GestionaleTabelleTableRoute
 }
 export interface FileRouteTypes {
@@ -249,6 +267,8 @@ export interface FileRouteTypes {
     | '/brani/'
     | '/corsi/'
     | '/gestionale/'
+    | '/api/google/accedi'
+    | '/api/google/ritorno'
     | '/gestionale/tabelle/$table'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -273,6 +293,8 @@ export interface FileRouteTypes {
     | '/brani'
     | '/corsi'
     | '/gestionale'
+    | '/api/google/accedi'
+    | '/api/google/ritorno'
     | '/gestionale/tabelle/$table'
   id:
     | '__root__'
@@ -298,6 +320,8 @@ export interface FileRouteTypes {
     | '/brani/'
     | '/corsi/'
     | '/gestionale/'
+    | '/api/google/accedi'
+    | '/api/google/ritorno'
     | '/gestionale/tabelle/$table'
   fileRoutesById: FileRoutesById
 }
@@ -320,6 +344,8 @@ export interface RootRouteChildren {
   StrumentoIdRoute: typeof StrumentoIdRoute
   BraniIndexRoute: typeof BraniIndexRoute
   CorsiIndexRoute: typeof CorsiIndexRoute
+  ApiGoogleAccediRoute: typeof ApiGoogleAccediRoute
+  ApiGoogleRitornoRoute: typeof ApiGoogleRitornoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -478,6 +504,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StrumentoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/google/accedi': {
+      id: '/api/google/accedi'
+      path: '/api/google/accedi'
+      fullPath: '/api/google/accedi'
+      preLoaderRoute: typeof ApiGoogleAccediRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/google/ritorno': {
+      id: '/api/google/ritorno'
+      path: '/api/google/ritorno'
+      fullPath: '/api/google/ritorno'
+      preLoaderRoute: typeof ApiGoogleRitornoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gestionale/tabelle/$table': {
       id: '/gestionale/tabelle/$table'
       path: '/tabelle/$table'
@@ -527,6 +567,8 @@ const rootRouteChildren: RootRouteChildren = {
   StrumentoIdRoute: StrumentoIdRoute,
   BraniIndexRoute: BraniIndexRoute,
   CorsiIndexRoute: CorsiIndexRoute,
+  ApiGoogleAccediRoute: ApiGoogleAccediRoute,
+  ApiGoogleRitornoRoute: ApiGoogleRitornoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

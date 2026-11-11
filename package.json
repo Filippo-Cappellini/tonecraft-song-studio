@@ -15,7 +15,10 @@
     "test:watch": "vitest",
     "start:server": "node .output/server/index.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
-    "crea-utente": "node scripts/crea-utente.mjs"
+    "crea-utente": "node scripts/crea-utente.mjs",
+    "db:up": "docker compose -f deploy/raspberry/docker-compose.yml --env-file .env.db up -d --wait",
+    "db:down": "docker compose -f deploy/raspberry/docker-compose.yml --env-file .env.db down",
+    "db:migrate:dev": "node --env-file=.env.db scripts/db-migrate.mjs"
   },
   "overrides": {
     "rolldown": "1.2.16",

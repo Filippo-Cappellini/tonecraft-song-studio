@@ -1,8 +1,8 @@
 [Unit]
 Description=Tono (Tonecraft) - app e gestionale
-After=network-online.target postgresql.service
+After=network-online.target docker.service
 Wants=network-online.target
-Requires=postgresql.service
+Requires=docker.service
 
 [Service]
 Type=simple
@@ -10,6 +10,8 @@ User=tonecraft
 Group=tonecraft
 WorkingDirectory=/opt/tonecraft
 EnvironmentFile=/etc/tonecraft/tonecraft.env
+# Prima di partire aspetta il database in Docker ("+": questo controllo gira come root, che può usare docker).
+ExecStartPre=+/usr/local/sbin/tonecraft-db-wait
 ExecStart=/usr/bin/node /opt/tonecraft/.output/server/index.mjs
 Restart=on-failure
 RestartSec=3

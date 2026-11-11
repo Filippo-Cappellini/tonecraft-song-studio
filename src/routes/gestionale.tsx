@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Panel, staffStatusQuery, useStaffLogout } from "@/components/gestionale/kit";
-import { LoginForm } from "@/components/gestionale/LoginForm";
+import { AccessPanel } from "@/components/gestionale/AccessPanel";
 import { STAFF_NAV } from "@/components/gestionale/nav";
 import { canAny, ROLES } from "@/lib/staff-roles";
 
@@ -44,7 +44,7 @@ function GestionaleLayout() {
   if (!user)
     return (
       <Shell>
-        <LoginForm />
+        <AccessPanel />
       </Shell>
     );
 

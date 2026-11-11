@@ -1,7 +1,7 @@
 [Unit]
 Description=Backup del database di Tono
-After=postgresql.service
-Requires=postgresql.service
+After=docker.service
+Requires=docker.service
 
 [Service]
 Type=oneshot
