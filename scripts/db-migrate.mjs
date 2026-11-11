@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Applica al PostgreSQL locale le migrazioni in drizzle/migrations (in ordine di nome), una sola volta ciascuna.
-// Uso: DATABASE_URL=postgres://... node scripts/db-migrate.mjs   (sul Raspberry: node --env-file=/etc/tonecraft/migrate.env ...)
+// Uso: DATABASE_URL=postgres://... node scripts/db-migrate.mjs   (sul Raspberry lo lancia il servizio "migrate" di docker-compose.yml)
 // Va lanciato con il PROPRIETARIO delle tabelle (utente "tonecraft"); poi dà all'utente dell'app (tonecraft_app,
 // se esiste) solo i permessi sui dati.
 import { readdir, readFile } from "node:fs/promises";

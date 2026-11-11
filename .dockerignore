@@ -1,0 +1,16 @@
+# Fuori dall'immagine: dipendenze e build locali, git, password e file di sviluppo.
+node_modules
+.output
+.output.lovable-bak
+.git
+.npm
+.wrangler
+.tanstack
+.nitro
+.vscode
+.idea
+.env.db
+.env.local
+*.local
+deploy/raspberry/.env
+*.log

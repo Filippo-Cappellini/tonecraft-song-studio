@@ -1,5 +1,5 @@
 // Connessione al PostgreSQL locale (installazione su server, es. Raspberry). Solo lato server.
-// DATABASE_URL arriva dal file di ambiente del servizio (/etc/tonecraft/tonecraft.env), mai dal browser.
+// DATABASE_URL arriva dal file di ambiente del servizio (container "app" di docker-compose.yml, da /etc/tonecraft/tono.env), mai dal browser.
 import postgres from "postgres";
 
 type Sql = ReturnType<typeof postgres>;

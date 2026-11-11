@@ -2,9 +2,9 @@
 # Backup del database di Tono (dati dell'app, account, registro), preso dal container Docker. Tiene gli ultimi 14.
 # Installato come /usr/local/sbin/tonecraft-backup e lanciato ogni notte da tonecraft-backup.timer.
 # Ripristino (sovrascrive i dati attuali):
-#   sudo systemctl stop tonecraft
+#   sudo docker stop tonecraft-app
 #   docker exec -i tonecraft-db pg_restore -U postgres --clean --if-exists -d tonecraft < /var/backups/tonecraft/<file>.dump
-#   sudo systemctl start tonecraft
+#   sudo docker start tonecraft-app
 set -euo pipefail
 DIR=/var/backups/tonecraft
 KEEP=14

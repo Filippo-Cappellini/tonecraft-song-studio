@@ -1,18 +1,25 @@
-# Database di Tono in Docker: PostgreSQL 15 (immagine ufficiale, anche per Raspberry arm64).
-# Sul Raspberry lo avvia install.sh:
-#   docker compose -f deploy/raspberry/docker-compose.yml --env-file /etc/tonecraft/db.env up -d --wait
-# Sul PC, per sviluppare:  npm run db:up   (usa .env.db, vedi .env.db.example)
+# Tono in Docker: database PostgreSQL 15, utenti del database, migrazioni e app (immagini arm64/amd64).
+# Sul Raspberry (configurazione in /etc/tonecraft/tono.env, collegata qui come .env da install.sh):
+#   cd /opt/tonecraft/deploy/raspberry && sudo docker compose up -d --build
+# Sul PC:  npm run docker:up  (tutto)  oppure  npm run db:up  (solo il database); password in .env.db
+# Ordine di avvio: db (pronto) → db-setup (utenti) → migrate (tabelle) → app.
 name: tonecraft
+
+x-hardening: &hardening
+  # Nessun processo nel container può ottenere privilegi in più (setuid ecc.).
+  security_opt:
+    - no-new-privileges:true
 
 services:
   db:
+    <<: *hardening
     image: postgres:15
     container_name: tonecraft-db
     restart: unless-stopped
     environment:
-      # Superutente del database (solo per amministrazione e backup).
+      # Superutente del database (solo per amministrazione, utenti e backup).
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?manca POSTGRES_PASSWORD nel file di ambiente}
-      # Password dell'utente "tonecraft" usato dall'app (creato da db-init/01-tono.sh al primo avvio).
+      # Password del proprietario delle tabelle "tonecraft" (creato da db-init/01-tono.sh al primo avvio).
       APP_DB_PASSWORD: ${APP_DB_PASSWORD:?manca APP_DB_PASSWORD nel file di ambiente}
       TZ: Europe/Rome
     ports:
@@ -29,9 +36,63 @@ services:
       timeout: 3s
       retries: 30
     shm_size: 128mb
-    # Nessun processo nel container può ottenere privilegi in più (setuid ecc.).
-    security_opt:
-      - no-new-privileges:true
+
+  # Crea/aggiorna l'utente limitato dell'app (tonecraft_app). Gira e finisce a ogni avvio.
+  db-setup:
+    <<: *hardening
+    image: postgres:15
+    container_name: tonecraft-db-setup
+    restart: "no"
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      APP_RUNTIME_PASSWORD: ${APP_RUNTIME_PASSWORD:?manca APP_RUNTIME_PASSWORD nel file di ambiente}
+    volumes:
+      - ./db-ruoli.sh:/db-ruoli.sh:ro
+    entrypoint: ["sh", "/db-ruoli.sh"]
+
+  # Applica le migrazioni come proprietario delle tabelle, poi dà all'app solo i permessi sui dati.
+  migrate:
+    <<: *hardening
+    image: tonecraft-app:latest
+    build: { context: ../.., dockerfile: Dockerfile }
+    container_name: tonecraft-migrate
+    restart: "no"
+    depends_on:
+      db-setup: { condition: service_completed_successfully }
+    environment:
+      DATABASE_URL: postgres://tonecraft:${APP_DB_PASSWORD}@db:5432/tonecraft
+    command: ["node", "scripts/db-migrate.mjs"]
+    read_only: true
+    cap_drop: [ALL]
+
+  app:
+    <<: *hardening
+    image: tonecraft-app:latest
+    build: { context: ../.., dockerfile: Dockerfile }
+    container_name: tonecraft-app
+    restart: unless-stopped
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    ports:
+      # Dalla rete locale. Con un proxy HTTPS davanti metti APP_BIND=127.0.0.1.
+      - "${APP_BIND:-0.0.0.0}:${APP_PORT:-3000}:3000"
+    environment:
+      # L'app usa l'utente con i permessi minimi; le altre password del database non le vede.
+      DATABASE_URL: postgres://tonecraft_app:${APP_RUNTIME_PASSWORD}@db:5432/tonecraft
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      REGISTRAZIONI: ${REGISTRAZIONI:-aperte}
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      TZ: Europe/Rome
+    # File system in sola lettura, nessuna capability di Linux.
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
 
 volumes:
   tonecraft-db:

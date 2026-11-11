@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Crea un utente del gestionale, o ne reimposta password e ruolo se esiste già (riattivandolo).
 // Serve soprattutto per il primo amministratore. Uso:
-//   node --env-file=/etc/tonecraft/tonecraft.env scripts/crea-utente.mjs --username admin --nome "Mario Rossi" --ruolo admin
+//   sudo docker exec -it tonecraft-app node scripts/crea-utente.mjs --username admin --nome "Mario Rossi" --ruolo admin
 // La password si scrive quando richiesta (non resta nella cronologia della shell) oppure con la variabile TONO_PASSWORD.
 import { randomBytes, scrypt as scryptCb } from "node:crypto";
 import { createInterface } from "node:readline";
@@ -80,7 +80,7 @@ async function main() {
   if (!["admin", "catalogo", "lettura"].includes(role))
     throw new Error("--ruolo: admin, catalogo o lettura");
   if (!process.env.DATABASE_URL)
-    throw new Error("Manca DATABASE_URL (usa node --env-file=/etc/tonecraft/tonecraft.env).");
+    throw new Error("Manca DATABASE_URL (sul Raspberry: sudo docker exec -it tonecraft-app node scripts/crea-utente.mjs ...).");
 
   let password = process.env.TONO_PASSWORD;
   if (!password) {
