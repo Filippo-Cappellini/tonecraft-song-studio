@@ -30,7 +30,6 @@ Tutto parte con **Docker Compose**: database, utenti del database, migrazioni e 
 - [Primo accesso e dati di prova](#primo-accesso-e-dati-di-prova)
 - [Sviluppo senza Docker](#sviluppo-senza-docker)
 - [Architettura e tecnologie](#architettura-e-tecnologie)
-- [Schema del database](#schema-del-database)
 - [Servizi esterni (API di terze parti)](#servizi-esterni-api-di-terze-parti)
 - [Sicurezza](#sicurezza)
 - [Test](#test)
