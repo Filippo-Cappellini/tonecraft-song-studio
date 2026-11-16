@@ -15,6 +15,7 @@ import {
   Panel,
   useStaff,
 } from "@/components/gestionale/kit";
+import { PendingPanel, SignupPanel, UsersPanel } from "@/components/gestionale/UserAdmin";
 import { listAudit, listStaffUsers, saveStaffUser, type StaffUserRow } from "@/lib/staff.functions";
 import { PASSWORD_HINT, ROLE_IDS, ROLES, type Role } from "@/lib/staff-roles";
 
@@ -35,6 +36,8 @@ function Utenti() {
     enabled: isAdmin,
   });
   if (!isAdmin) return <Forbidden />;
+  const all = users.data ?? [];
+  const pending = all.filter((u) => u.pending);
 
   return (
     <>
@@ -47,7 +50,9 @@ function Utenti() {
           </Button>
         }
       />
-      <Panel title="Ruoli">
+      <SignupPanel />
+      {pending.length > 0 && <PendingPanel users={pending} />}
+      <Panel title="Ruoli" className="mt-6">
         <ul className="grid gap-2 text-sm sm:grid-cols-2">
           {ROLE_IDS.map((r) => (
             <li key={r}>
@@ -57,46 +62,12 @@ function Utenti() {
           ))}
         </ul>
       </Panel>
-      <Panel title="Utenti" className="mt-6">
-        {users.isError && <Errors errors={[errorText(users.error)]} />}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
-            <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr className="border-b">
-                <th className="py-2 pr-3">Utente</th>
-                <th className="py-2 pr-3">Ruolo</th>
-                <th className="py-2 pr-3">Ultimo accesso</th>
-                <th className="py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {(users.data ?? []).map((u) => (
-                <tr
-                  key={u.id}
-                  className={`border-b border-border/50 ${u.active ? "" : "opacity-50"}`}
-                >
-                  <td className="py-2 pr-3">
-                    <div className="font-medium">{u.full_name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {u.username}
-                      {u.email ? ` · ${u.email}` : ""}
-                      {u.google ? " · Google" : ""}
-                      {u.active ? "" : " · disattivato"}
-                    </div>
-                  </td>
-                  <td className="py-2 pr-3">{ROLES[u.role].label}</td>
-                  <td className="py-2 pr-3">{fmtDate(u.last_login_at)}</td>
-                  <td className="py-2 text-right">
-                    <Button size="sm" variant="outline" onClick={() => setEditing(u)}>
-                      Modifica
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+      <UsersPanel
+        users={all}
+        meId={staff.user?.id ?? ""}
+        error={users.isError ? errorText(users.error) : null}
+        onEdit={setEditing}
+      />
       <Panel title="Registro attività (ultime 200)" className="mt-6">
         <div className="max-h-[480px] overflow-auto">
           <table className="w-full min-w-[560px] text-sm">

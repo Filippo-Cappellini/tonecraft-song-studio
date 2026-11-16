@@ -80,10 +80,24 @@ Il gestionale è il **database dell'app**: qui sono salvati tutti i dati che l'a
 ## Account
 
 - **Crea account** (pagina Accedi): nome utente, nome, email facoltativa e password. Il nuovo account è in
-  **sola lettura**; l'amministratore può cambiargli ruolo da *Utenti e registro*. Al massimo 5 registrazioni
-  all'ora dallo stesso dispositivo.
-- Per chiudere le registrazioni: `REGISTRAZIONI=chiuse` in `/etc/tonecraft/tono.env`, poi
-  `cd /opt/tonecraft/deploy/raspberry && sudo docker compose up -d`. Gli account li crea allora solo l'amministratore.
+  **sola lettura**; l'amministratore può cambiargli ruolo da *Utenti e registro*.
+- **Iscrizioni** (in *Utenti e registro*, solo amministratore). Ci sono tre modalità:
+  - **aperte**: si entra subito;
+  - **con approvazione** (predefinita): l'account resta in attesa finché l'amministratore non lo approva;
+  - **chiuse**: gli account li crea solo l'amministratore.
+
+  Nella stessa pagina si imposta quante iscrizioni accettare al massimo in un'ora da tutti insieme (predefinito 10).
+- **Protezione dai bot** (sempre attiva):
+  - al massimo 5 iscrizioni all'ora dallo stesso indirizzo;
+  - un campo nascosto che solo i bot compilano: il bot riceve una finta conferma e il suo indirizzo viene bloccato
+    dalla Guardia;
+  - un modulo inviato meno di 3 secondi dopo l'apertura viene rifiutato. Lo stabilisce un gettone firmato dal
+    server, che vale per una sola iscrizione.
+
+  Gli account creati da un bot si eliminano in blocco: in *Utenti* li selezioni con le caselle (o con «Seleziona
+  tutti» dopo una ricerca) e premi **Elimina** o **Disattiva**.
+- `REGISTRAZIONI=chiuse` in `/etc/tonecraft/tono.env` le chiude sempre, anche se il gestionale dice altro (poi
+  `cd /opt/tonecraft/deploy/raspberry && sudo docker compose up -d`).
 - Chi entra con Google e non ha ancora un account ne riceve uno in sola lettura (nome utente preso dall'email).
   Google **non** viene mai collegato da solo a un account con la stessa email: chi ha già un account lo collega da
   *Il mio account → Collega Google*. Da *Il mio account* si può anche creare una password per entrare senza Google.

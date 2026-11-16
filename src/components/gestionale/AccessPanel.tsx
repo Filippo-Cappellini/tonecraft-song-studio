@@ -13,6 +13,9 @@ const ERRORS: Record<string, string> = {
   "registrazioni-chiuse":
     "Non esiste un account con questo profilo Google e le registrazioni sono chiuse.",
   disattivato: "Questo account è stato disattivato dall'amministratore.",
+  "in-attesa":
+    "Il tuo account è in attesa: potrai entrare quando l'amministratore lo avrà approvato.",
+  "troppe-registrazioni": "Troppe registrazioni in questo momento. Riprova tra un'ora.",
   "accesso-richiesto": "Per collegare Google devi prima entrare nel tuo account.",
 };
 
@@ -78,7 +81,7 @@ export function AccessPanel({
         </>
       )}
       {tab === "crea" && signup ? (
-        <SignupForm onSuccess={onSuccess} />
+        <SignupForm onSuccess={onSuccess} approval={!!status.data?.signupApproval} />
       ) : (
         <LoginForm onSuccess={onSuccess} />
       )}

@@ -17,9 +17,16 @@ import {
   usernameFromEmail,
   type GoogleIdentity,
 } from "../google-auth";
-import { SIGNUP_ROLE, signupOpen } from "../staff-roles";
+import { SIGNUP_ROLE } from "../staff-roles";
 import { db, hasLocalDb } from "./db.server";
-import { audit, currentStaff, newSessionToken, sessionCookieHeader } from "./auth.server";
+import {
+  audit,
+  currentStaff,
+  newSessionToken,
+  overLimit,
+  sessionCookieHeader,
+} from "./auth.server";
+import { signupSettings } from "./signup.server";
 
 const FLOW_COOKIE = "tono_google";
 const FLOW_MS = 10 * 60 * 1000;
@@ -140,7 +147,18 @@ export async function finishGoogleLogin(request: Request): Promise<Response> {
 
   const user = await findOrCreateGoogleUser(identity);
   if (user === "chiuse") return fail("registrazioni-chiuse");
-  if (!user.active) return fail("disattivato");
+  if (user === "troppe") return fail("troppe-registrazioni");
+  if (!user.active) {
+    if (user.created)
+      await audit(
+        { id: user.id, username: user.username },
+        "registrazione con Google (in attesa di approvazione)",
+        "utente",
+        user.id,
+        identity.email,
+      );
+    return fail(user.pending ? "in-attesa" : "disattivato");
+  }
   const token = await newSessionToken(user.id);
   await audit(
     { id: user.id, username: user.username },
@@ -171,15 +189,19 @@ async function linkGoogle(userId: string, g: GoogleIdentity): Promise<Response> 
   return redirect("/gestionale/account?collegato=1", [clearFlowCookie()]);
 }
 
-type Found = { id: string; username: string; active: boolean; created: boolean };
+type Found = { id: string; username: string; active: boolean; pending: boolean; created: boolean };
 
-async function findOrCreateGoogleUser(g: GoogleIdentity): Promise<Found | "chiuse"> {
+async function findOrCreateGoogleUser(g: GoogleIdentity): Promise<Found | "chiuse" | "troppe"> {
   const sql = db();
   const [bySub] = await sql<
     Found[]
-  >`select id, username, active, false as created from staff_users where google_sub = ${g.sub}`;
+  >`select id, username, active, pending, false as created from staff_users where google_sub = ${g.sub}`;
   if (bySub) return bySub;
-  if (!signupOpen(process.env)) return "chiuse";
+  const settings = await signupSettings();
+  if (settings.mode === "chiuse") return "chiuse";
+  // Stesso limite globale delle iscrizioni con password.
+  if (overLimit("signup:tutti", settings.perHour, 60 * 60 * 1000)) return "troppe";
+  const pending = settings.mode === "approvazione";
   // Nuovo account in sola lettura; nome utente dall'email, con un numero se è già preso.
   // Se l'email è già scritta in un altro account, il nuovo account si crea senza email (nessun collegamento automatico).
   const [taken] = await sql`select 1 from staff_users where lower(email) = ${g.email}`;
@@ -189,16 +211,16 @@ async function findOrCreateGoogleUser(g: GoogleIdentity): Promise<Found | "chius
     const username = i === 0 ? base : `${base}${i + 1}`;
     try {
       const [created] = await sql<Found[]>`
-        insert into staff_users (username, full_name, role, email, google_sub)
-        values (${username}, ${g.name}, ${SIGNUP_ROLE}, ${email}, ${g.sub})
-        returning id, username, active, true as created`;
+        insert into staff_users (username, full_name, role, email, google_sub, active, pending)
+        values (${username}, ${g.name}, ${SIGNUP_ROLE}, ${email}, ${g.sub}, ${!pending}, ${pending})
+        returning id, username, active, pending, true as created`;
       return created!;
     } catch (e) {
       const code = typeof e === "object" && e && "code" in e ? (e as { code: string }).code : "";
       if (code !== "23505") throw e;
       const [again] = await sql<
         Found[]
-      >`select id, username, active, false as created from staff_users where google_sub = ${g.sub}`;
+      >`select id, username, active, pending, false as created from staff_users where google_sub = ${g.sub}`;
       if (again) return again; // creato nel frattempo da un'altra richiesta
     }
   }

@@ -55,7 +55,13 @@ describe("SQL injection", () => {
 
 describe("IDOR e permessi", () => {
   // Funzioni server pubbliche per scelta: catalogo (dati pubblici), accesso, registrazione, uscita.
-  const PUBLIC_FNS = new Set(["getStaffStatus", "staffLogin", "staffSignup", "staffLogout"]);
+  const PUBLIC_FNS = new Set([
+    "getStaffStatus",
+    "staffLogin",
+    "staffSignup",
+    "staffLogout",
+    "getSignupToken",
+  ]);
 
   it.each([
     "src/lib/staff.functions.ts",
@@ -92,7 +98,14 @@ describe("IDOR e permessi", () => {
     expect(save).toMatch(/requireStaff\(def\.perm\)/);
     expect(del).toMatch(/requireStaff\(def\.perm\)/);
     const staff = read(path.resolve("src/lib/staff.functions.ts"));
-    for (const name of ["listStaffUsers", "saveStaffUser", "listAudit"]) {
+    for (const name of [
+      "listStaffUsers",
+      "saveStaffUser",
+      "listAudit",
+      "getSignupAdmin",
+      "saveSignupAdmin",
+      "bulkStaffUsers",
+    ]) {
       expect(staff.split(`export const ${name} =`)[1]!.split("export const")[0], name).toMatch(
         /requireStaff\("admin"\)/,
       );

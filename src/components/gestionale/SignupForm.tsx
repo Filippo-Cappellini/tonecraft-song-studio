@@ -1,16 +1,37 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Errors, Field, inputClass, staffStatusQuery } from "@/components/gestionale/kit";
-import { staffSignup } from "@/lib/staff.functions";
+import { Errors, Field, inputClass, Notice, staffStatusQuery } from "@/components/gestionale/kit";
+import { getSignupToken, staffSignup } from "@/lib/staff.functions";
 import { PASSWORD_HINT } from "@/lib/staff-roles";
+import { TRAP_FIELD } from "@/lib/signup";
 
-/** Creazione di un account: si entra subito, in sola lettura (l'amministratore può dare più permessi). */
-export function SignupForm({ onSuccess }: { onSuccess?: (() => void) | undefined }) {
+/**
+ * Creazione di un account in sola lettura (l'amministratore può dare più permessi). Con le iscrizioni
+ * "con approvazione" l'account aspetta l'amministratore. Il modulo chiede un gettone al server appena si apre:
+ * serve a riconoscere i bot che lo inviano in un attimo.
+ */
+export function SignupForm({
+  onSuccess,
+  approval = false,
+}: {
+  onSuccess?: (() => void) | undefined;
+  approval?: boolean;
+}) {
   const qc = useQueryClient();
   const [f, setF] = useState({ username: "", full_name: "", email: "", password: "", repeat: "" });
+  // Campo trappola: invisibile, una persona non lo compila mai.
+  const [trap, setTrap] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [waiting, setWaiting] = useState(false);
+  const token = useQuery({
+    queryKey: ["signup-token"],
+    queryFn: () => getSignupToken(),
+    staleTime: 60 * 60 * 1000,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+  });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) =>
     setF({ ...f, [k]: e.target.value });
 
@@ -26,9 +47,15 @@ export function SignupForm({ onSuccess }: { onSuccess?: (() => void) | undefined
           full_name: f.full_name,
           email: f.email,
           password: f.password,
+          token: token.data?.token ?? "",
+          [TRAP_FIELD]: trap,
         },
       });
-      if (!r.ok) setError(r.error);
+      if (!r.ok) {
+        setError(r.error);
+        // Gettone usato o scaduto: se ne chiede uno nuovo per il prossimo tentativo.
+        if (r.error.includes("scaduto")) await token.refetch();
+      } else if (r.pending) setWaiting(true);
       else {
         await qc.invalidateQueries({ queryKey: staffStatusQuery.queryKey });
         onSuccess?.();
@@ -39,6 +66,14 @@ export function SignupForm({ onSuccess }: { onSuccess?: (() => void) | undefined
       setBusy(false);
     }
   };
+
+  if (waiting)
+    return (
+      <Notice>
+        Richiesta inviata. Il tuo account è in attesa: potrai entrare quando l'amministratore lo
+        avrà approvato.
+      </Notice>
+    );
 
   return (
     <form onSubmit={submit} className="space-y-4">
@@ -65,6 +100,20 @@ export function SignupForm({ onSuccess }: { onSuccess?: (() => void) | undefined
           maxLength={120}
         />
       </Field>
+      {/* Trappola per i bot: fuori dallo schermo, saltata dal tasto Tab e nascosta ai lettori di schermo. */}
+      <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+        <label>
+          Non compilare questo campo
+          <input
+            name={TRAP_FIELD}
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={trap}
+            onChange={(e) => setTrap(e.target.value)}
+          />
+        </label>
+      </div>
       <Field
         label="Email (facoltativa)"
         help="Se usi la stessa email di Google, potrai entrare anche con Google."
@@ -99,10 +148,13 @@ export function SignupForm({ onSuccess }: { onSuccess?: (() => void) | undefined
         />
       </Field>
       <Errors errors={error ? [error] : []} />
-      <Button type="submit" className="w-full" disabled={busy}>
+      <Button type="submit" className="w-full" disabled={busy || !token.data}>
         {busy ? "Creazione…" : "Crea account"}
       </Button>
       <p className="text-xs text-muted-foreground">
+        {approval
+          ? "Il nuovo account deve essere approvato dall'amministratore prima di poter entrare. "
+          : ""}
         Il nuovo account può consultare il database. Per modificare i dati chiedi
         all'amministratore.
       </p>

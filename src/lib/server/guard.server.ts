@@ -205,6 +205,17 @@ export function checkResponse(rawIp: string | null, req: Seen, status: number): 
   if (hit) addPoints(ip!, hit, describe(req));
 }
 
+/**
+ * Segnalazione da un'altra parte dell'app (es. un bot nel modulo di iscrizione): aggiunge punti all'indirizzo.
+ * Con BAN_POINTS il blocco è immediato. Rispetta interruttore, indirizzi consentiti e protetti.
+ */
+export function penalize(rawIp: string | null, hit: Hit, detail = ""): boolean {
+  if (!guardEnabled()) return false;
+  const ip = normalizeIp(rawIp);
+  if (isProtected(ip)) return false;
+  return addPoints(ip!, hit, detail.slice(0, 200));
+}
+
 /** Pagina mostrata a chi è bloccato. */
 export function bannedResponse(ip: string | null): Response {
   return new Response(
