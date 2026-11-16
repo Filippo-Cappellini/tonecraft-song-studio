@@ -3,6 +3,8 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { NONCE_HEADER, makeNonce, withSecurityHeaders } from "./lib/security-headers";
+import { normalizeIp } from "./lib/guard";
+import { bannedResponse, checkRequest, checkResponse, isBanned } from "./lib/server/guard.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -95,9 +97,30 @@ function limitBody(request: Request, max: number): ReadableStream<Uint8Array> {
 /** Risposte con dati dell'utente (funzioni server, accesso con Google): mai in cache. */
 const isPrivatePath = (path: string) => path.startsWith("/_serverFn") || path.startsWith("/api/");
 
+/**
+ * Indirizzo del visitatore. Il server Node lo mette in `request.ip`; dietro un proxy HTTPS (TRUST_PROXY=1)
+ * vale il primo indirizzo di X-Forwarded-For.
+ */
+function requestIp(request: Request): string | null {
+  if (typeof process !== "undefined" && process.env["TRUST_PROXY"] === "1") {
+    const first = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    if (first) return normalizeIp(first);
+  }
+  return normalizeIp((request as Request & { ip?: string }).ip);
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     const url = new URL(request.url);
+    const ip = requestIp(request);
+    const seen = {
+      method: request.method,
+      path: url.pathname,
+      query: url.search,
+      userAgent: request.headers.get("user-agent"),
+    };
+    // Guardia: chi è bloccato, o si fa bloccare con questa richiesta, non arriva all'app.
+    if ((await isBanned(ip)) || checkRequest(ip, seen)) return bannedResponse(ip);
     const declared = Number(request.headers.get("content-length") ?? 0);
     if (declared > MAX_BODY_BYTES) {
       return new Response("Richiesta troppo grande", {
@@ -122,7 +145,11 @@ export default {
       // Necessario per inoltrare un body in streaming.
       ...(hasBody ? { duplex: "half" } : {}),
     } as RequestInit);
+    // La copia perderebbe l'indirizzo del visitatore (h3 lo legge da `req.ip`): senza, getRequestIP darebbe
+    // sempre "?" e il blocco dei tentativi di accesso varrebbe per tutti insieme.
+    if (ip) Object.defineProperty(forwarded, "ip", { value: ip });
     let response = await handle(forwarded, env, ctx);
+    checkResponse(ip, seen, response.status);
     if (isPrivatePath(url.pathname)) {
       response = new Response(response.body, response);
       response.headers.set("Cache-Control", "no-store");

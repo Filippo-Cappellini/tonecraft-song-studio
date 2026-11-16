@@ -75,7 +75,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400;600&display=swap" },
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      // Chiave di violino con un nome nuovo: i browser che avevano in cache il vecchio cuore la caricano di sicuro.
+      { rel: "icon", href: "/icons/chiave-violino.png", type: "image/png", sizes: "256x256" },
+      { rel: "icon", href: "/favicon.ico?v=3", type: "image/x-icon", sizes: "any" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
     ],

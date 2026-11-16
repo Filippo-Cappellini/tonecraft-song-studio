@@ -57,20 +57,24 @@ describe("IDOR e permessi", () => {
   // Funzioni server pubbliche per scelta: catalogo (dati pubblici), accesso, registrazione, uscita.
   const PUBLIC_FNS = new Set(["getStaffStatus", "staffLogin", "staffSignup", "staffLogout"]);
 
-  it.each(["src/lib/staff.functions.ts", "src/lib/tables.functions.ts"])(
-    "%s: ogni funzione server controlla l'utente",
-    (file) => {
-      const src = read(path.resolve(file));
-      const blocks = src.split(/export const (\w+) = createServerFn/).slice(1);
-      expect(blocks.length).toBeGreaterThan(2);
-      for (let i = 0; i < blocks.length; i += 2) {
-        const name = blocks[i]!;
-        const body = blocks[i + 1]!;
-        if (PUBLIC_FNS.has(name)) continue;
-        expect(body, name).toMatch(/requireStaff\(/);
-      }
-    },
-  );
+  it.each([
+    "src/lib/staff.functions.ts",
+    "src/lib/tables.functions.ts",
+    "src/lib/guard.functions.ts",
+  ])("%s: ogni funzione server controlla l'utente", (file) => {
+    const src = read(path.resolve(file));
+    const blocks = src.split(/export const (\w+) = createServerFn/).slice(1);
+    expect(blocks.length).toBeGreaterThan(2);
+    // La guardia è tutta per l'amministratore.
+    if (file.includes("guard"))
+      expect(src.match(/requireStaff\("admin"\)/g)?.length).toBe(blocks.length / 2);
+    for (let i = 0; i < blocks.length; i += 2) {
+      const name = blocks[i]!;
+      const body = blocks[i + 1]!;
+      if (PUBLIC_FNS.has(name)) continue;
+      expect(body, name).toMatch(/requireStaff\(/);
+    }
+  });
 
   it("le funzioni sul proprio account usano l'utente della sessione, non un id mandato dal browser", () => {
     const src = read(path.resolve("src/lib/staff.functions.ts"));

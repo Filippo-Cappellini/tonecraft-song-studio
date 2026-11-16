@@ -73,7 +73,9 @@ cp .env.db.example .env.db        # Windows PowerShell: copy .env.db.example .en
 docker compose up -d --build
 ```
 
-Apri **http://localhost:3000**. La prima build richiede qualche minuto.
+Apri **http://IP-DEL-PC:3000** (es. `http://192.168.1.20:3000`), anche da telefono o tablet nella stessa rete.
+Per sapere l'indirizzo: `npm run indirizzo` (oppure `ipconfig` su Windows, `hostname -I` su Linux). La prima build
+richiede qualche minuto.
 
 `.env.db` contiene le password del database (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`, `APP_RUNTIME_PASSWORD`, solo
 lettere e cifre) e le porte. Per provare sul proprio PC vanno bene quelle di esempio; per qualunque altro uso
@@ -86,7 +88,7 @@ Cosa parte, in ordine (`docker compose ps -a`):
 | `db` | `tonecraft-db` | PostgreSQL 15. I dati restano nel volume `tonecraft-db`. Porta solo su `127.0.0.1` (`DB_PORT`, 55432 nell'esempio) |
 | `db-setup` | `tonecraft-db-setup` | crea l'utente limitato del database `tonecraft_app`, poi si ferma |
 | `migrate` | `tonecraft-migrate` | crea le tabelle e carica tutto il catalogo (`drizzle/migrations`), poi si ferma |
-| `app` | `tonecraft-app` | l'app e il gestionale su `http://localhost:3000` (`APP_PORT`) |
+| `app` | `tonecraft-app` | l'app e il gestionale su `http://IP-DEL-PC:3000` (`APP_PORT`) |
 
 `db-setup` e `migrate` restano «Exited (0)»: è normale.
 
@@ -113,7 +115,7 @@ docker exec -it tonecraft-app node scripts/crea-utente.mjs --username admin --no
 Regole per la password: almeno 12 caratteri con almeno 3 tipi tra minuscole, maiuscole, cifre e simboli (oppure una
 frase di 20+ caratteri), senza il nome utente e senza sequenze comuni.
 
-Poi su http://localhost:3000 premi **Accedi** in alto a destra ed entra. Lo stesso pulsante diventa il menu
+Poi su http://IP-DEL-PC:3000 premi **Accedi** in alto a destra ed entra. Lo stesso pulsante diventa il menu
 dell'utente, con le sezioni del gestionale ed **Esci**. In alternativa, da **Accedi → Crea account** ci si registra
 da soli: l'account parte in sola lettura e l'amministratore può cambiargli ruolo da *Utenti e registro*.
 

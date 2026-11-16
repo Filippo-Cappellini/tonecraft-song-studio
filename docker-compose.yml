@@ -1,7 +1,7 @@
 # Avvia tutti i servizi di Tono dalla cartella principale del progetto:
 #   cp .env.db.example .env.db      (poi cambia le password: solo lettere e cifre)
 #   docker compose up -d --build
-# App su http://localhost:3000. I servizi sono definiti in deploy/raspberry/docker-compose.yml (lo stesso file usato
+# App su http://IP-DEL-PC:3000 (npm run indirizzo lo stampa). I servizi sono definiti in deploy/raspberry/docker-compose.yml (lo stesso file usato
 # sul Raspberry); le password arrivano da .env.db.
 name: tonecraft
 

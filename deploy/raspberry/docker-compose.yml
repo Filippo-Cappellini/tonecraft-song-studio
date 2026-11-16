@@ -88,6 +88,10 @@ services:
       PUBLIC_URL: ${PUBLIC_URL:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Guardia contro le scansioni: "spenta" per disattivarla; indirizzi mai bloccati; ore di blocco (0 = finché non sbanni).
+      GUARDIA: ${GUARDIA:-attiva}
+      GUARDIA_CONSENTITI: ${GUARDIA_CONSENTITI:-}
+      GUARDIA_ORE: ${GUARDIA_ORE:-0}
       TZ: Europe/Rome
     # File system in sola lettura, nessuna capability di Linux.
     read_only: true

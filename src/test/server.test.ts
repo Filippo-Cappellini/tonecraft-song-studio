@@ -36,8 +36,38 @@ describe("server.ts", () => {
     expect(got.headers.get(NONCE_HEADER)).not.toBe("valore-del-client");
   });
 
+  it("passa all'app l'indirizzo del visitatore (serve al blocco dei tentativi di accesso)", async () => {
+    const r = new Request("http://localhost:8080/brani", { headers: { "user-agent": "Firefox" } });
+    Object.defineProperty(r, "ip", { value: "::ffff:192.168.50.30" });
+    await server.fetch(r, {}, {});
+    expect((seen.at(-1) as Request & { ip?: string }).ip).toBe("192.168.50.30");
+  });
+
+  it("guardia: chi scansiona riceve 403 e non arriva all'app, nemmeno dopo", async () => {
+    const from = (path: string, ua: string) => {
+      const r = new Request(`http://localhost:8080${path}`, { headers: { "user-agent": ua } });
+      Object.defineProperty(r, "ip", { value: "192.168.50.99" });
+      return r;
+    };
+    const before = seen.length;
+    const first = await server.fetch(
+      from("/", "Mozilla/5.0 (compatible; Nmap Scripting Engine)"),
+      {},
+      {},
+    );
+    expect(first.status).toBe(403);
+    expect(await first.text()).toContain("192.168.50.99");
+    const again = await server.fetch(from("/brani", "Firefox"), {}, {});
+    expect(again.status).toBe(403);
+    expect(seen.length).toBe(before);
+  });
+
   it("inoltra metodo e corpo delle richieste POST (funzioni del server)", async () => {
-    const res = await server.fetch(new Request("http://localhost:8080/_serverFn/x", { method: "POST", body: "dati" }), {}, {});
+    const res = await server.fetch(
+      new Request("http://localhost:8080/_serverFn/x", { method: "POST", body: "dati" }),
+      {},
+      {},
+    );
     expect(await res.text()).toBe("ok POST dati");
   });
 });

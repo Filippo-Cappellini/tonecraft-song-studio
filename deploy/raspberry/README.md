@@ -178,6 +178,21 @@ Attenzione: `docker volume rm tonecraft-db` o `docker compose down -v` **cancell
   dimensione; gli indirizzi salvati nel database (negozi, corsi) finiscono solo nei link, mai in richieste del server.
 - **Google**: un profilo Google non viene mai collegato da solo a un account con la stessa email (le email delle
   registrazioni non sono verificate); il collegamento si fa da *Il mio account*. Ogni ritorno da Google vale una volta sola.
+- **Guardia contro le scansioni**: chi scansiona l'app viene bloccato (risposta 403 a ogni richiesta). Si viene
+  bloccati subito con strumenti come Nmap (`-sV`, script `http-*`), Nikto, sqlmap, Nuclei, gobuster, ffuf, oppure con
+  attacchi nell'indirizzo (`../`, `UNION SELECT`, `${jndi:`). Si viene bloccati dopo qualche richiesta se si cercano
+  file che non esistono (`/.env`, `/.git`, `wp-login.php`, `*.php`), se si usano metodi HTTP insoliti, o con più di
+  10 «non trovato» in 10 minuti. Ogni blocco finisce nel registro attività.
+  Gli indirizzi bloccati si vedono e si **sbannano** dal gestionale (*Guardia*, solo amministratore) oppure da terminale:
+  `sudo docker compose exec app node scripts/sbanna.mjs` (elenco), `… sbanna.mjs 192.168.1.50` o `… sbanna.mjs --tutti`
+  (sul PC: `npm run sbanna -- 192.168.1.50`). Si accende e si spegne con l'interruttore nella pagina *Guardia*
+  (parte accesa). Impostazioni in `/etc/tonecraft/tono.env`: `GUARDIA=spenta` (spenta sempre, l'interruttore non basta),
+  `GUARDIA_CONSENTITI=192.168.1.10,10.0.0.0/24` (mai bloccati, per esempio il PC da cui fai i tuoi test),
+  `GUARDIA_ORE=24` (durata del blocco; 0 = finché non sbanni). Il Raspberry stesso e il gateway di Docker non
+  vengono mai bloccati. Limiti: la guardia vede solo il traffico HTTP dell'app. Una scansione di porte senza
+  richieste HTTP (`nmap -sS` senza `-sV`) non arriva all'app: per quella serve il firewall del sistema (per
+  esempio fail2ban). Con **Docker Desktop** (Windows/Mac) tutte le connessioni sembrano arrivare dal gateway, quindi
+  lì la guardia non blocca nessuno: funziona sul Raspberry e in Docker su Linux.
 - Richieste oltre 1 MB rifiutate; risposte con dati personali mai in cache.
 - Le password sono salvate con scrypt; dopo 5 tentativi sbagliati da un dispositivo l'accesso si blocca per 10 minuti
   (per un nome utente dopo 20, così nessuno può chiudere fuori l'amministratore con pochi tentativi).
@@ -203,7 +218,7 @@ Attenzione: `docker volume rm tonecraft-db` o `docker compose down -v` **cancell
   `APP_RUNTIME_PASSWORD`), `DB_PORT`, `APP_PORT`, `APP_BIND`, `COOKIE_SECURE`, `TRUST_PROXY`, `REGISTRAZIONI`,
   `PUBLIC_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
 - **Sul PC**: copia `.env.db.example` in `.env.db` (cambia le password), poi
-  - `npm run docker:up`: tutto in Docker come sul Raspberry, app su `http://localhost:3000`
+  - `npm run docker:up`: tutto in Docker come sul Raspberry, app su `http://IP-DEL-PC:3000` (lo stampa alla fine)
     (`npm run docker:logs` per i log, `npm run db:down` per fermare);
   - oppure `npm run db:up` (solo il database), `npm run db:migrate:dev` e
     `node --env-file=.env.db scripts/crea-utente.mjs --username admin --nome "Admin" --ruolo admin`, poi

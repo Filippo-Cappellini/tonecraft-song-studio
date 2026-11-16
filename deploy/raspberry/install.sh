@@ -141,6 +141,6 @@ fi
 IP=$(hostname -I | awk '{print $1}')
 echo
 echo "Fatto. Apri dalla rete locale:"
-echo "  http://$(hostname).local:$PORT        (oppure http://$IP:$PORT)"
+echo "  http://$IP:$PORT        (oppure http://$(hostname).local:$PORT)"
 echo "  Per entrare: pulsante «Accedi» in alto."
 echo "  Container: cd $COMPOSE_DIR && sudo docker compose ps"

@@ -28,6 +28,7 @@ import { Route as CorsiIndexRouteImport } from './routes/corsi.index'
 import { Route as CorsiPathIdRouteImport } from './routes/corsi.$pathId'
 import { Route as GestionaleIndexRouteImport } from './routes/gestionale.index'
 import { Route as GestionaleAccountRouteImport } from './routes/gestionale.account'
+import { Route as GestionaleGuardiaRouteImport } from './routes/gestionale.guardia'
 import { Route as GestionaleNegoziRouteImport } from './routes/gestionale.negozi'
 import { Route as GestionaleUtentiRouteImport } from './routes/gestionale.utenti'
 import { Route as StrumentoIdRouteImport } from './routes/strumento.$id'
@@ -130,6 +131,11 @@ const GestionaleAccountRoute = GestionaleAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => GestionaleRoute,
 } as any)
+const GestionaleGuardiaRoute = GestionaleGuardiaRouteImport.update({
+  id: '/guardia',
+  path: '/guardia',
+  getParentRoute: () => GestionaleRoute,
+} as any)
 const GestionaleNegoziRoute = GestionaleNegoziRouteImport.update({
   id: '/negozi',
   path: '/negozi',
@@ -178,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/brani/$songId': typeof BraniSongIdRoute
   '/corsi/$pathId': typeof CorsiPathIdRoute
   '/gestionale/account': typeof GestionaleAccountRoute
+  '/gestionale/guardia': typeof GestionaleGuardiaRoute
   '/gestionale/negozi': typeof GestionaleNegoziRoute
   '/gestionale/utenti': typeof GestionaleUtentiRoute
   '/strumento/$id': typeof StrumentoIdRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByTo {
   '/brani/$songId': typeof BraniSongIdRoute
   '/corsi/$pathId': typeof CorsiPathIdRoute
   '/gestionale/account': typeof GestionaleAccountRoute
+  '/gestionale/guardia': typeof GestionaleGuardiaRoute
   '/gestionale/negozi': typeof GestionaleNegoziRoute
   '/gestionale/utenti': typeof GestionaleUtentiRoute
   '/strumento/$id': typeof StrumentoIdRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/brani/$songId': typeof BraniSongIdRoute
   '/corsi/$pathId': typeof CorsiPathIdRoute
   '/gestionale/account': typeof GestionaleAccountRoute
+  '/gestionale/guardia': typeof GestionaleGuardiaRoute
   '/gestionale/negozi': typeof GestionaleNegoziRoute
   '/gestionale/utenti': typeof GestionaleUtentiRoute
   '/strumento/$id': typeof StrumentoIdRoute
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/brani/$songId'
     | '/corsi/$pathId'
     | '/gestionale/account'
+    | '/gestionale/guardia'
     | '/gestionale/negozi'
     | '/gestionale/utenti'
     | '/strumento/$id'
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/brani/$songId'
     | '/corsi/$pathId'
     | '/gestionale/account'
+    | '/gestionale/guardia'
     | '/gestionale/negozi'
     | '/gestionale/utenti'
     | '/strumento/$id'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/brani/$songId'
     | '/corsi/$pathId'
     | '/gestionale/account'
+    | '/gestionale/guardia'
     | '/gestionale/negozi'
     | '/gestionale/utenti'
     | '/strumento/$id'
@@ -483,6 +495,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestionaleAccountRouteImport
       parentRoute: typeof GestionaleRoute
     }
+    '/gestionale/guardia': {
+      id: '/gestionale/guardia'
+      path: '/guardia'
+      fullPath: '/gestionale/guardia'
+      preLoaderRoute: typeof GestionaleGuardiaRouteImport
+      parentRoute: typeof GestionaleRoute
+    }
     '/gestionale/negozi': {
       id: '/gestionale/negozi'
       path: '/negozi'
@@ -530,6 +549,7 @@ declare module '@tanstack/react-router' {
 
 interface GestionaleRouteChildren {
   GestionaleAccountRoute: typeof GestionaleAccountRoute
+  GestionaleGuardiaRoute: typeof GestionaleGuardiaRoute
   GestionaleNegoziRoute: typeof GestionaleNegoziRoute
   GestionaleUtentiRoute: typeof GestionaleUtentiRoute
   GestionaleIndexRoute: typeof GestionaleIndexRoute
@@ -538,6 +558,7 @@ interface GestionaleRouteChildren {
 
 const GestionaleRouteChildren: GestionaleRouteChildren = {
   GestionaleAccountRoute: GestionaleAccountRoute,
+  GestionaleGuardiaRoute: GestionaleGuardiaRoute,
   GestionaleNegoziRoute: GestionaleNegoziRoute,
   GestionaleUtentiRoute: GestionaleUtentiRoute,
   GestionaleIndexRoute: GestionaleIndexRoute,

@@ -18,7 +18,9 @@
     "crea-utente": "node scripts/crea-utente.mjs",
     "db:up": "docker compose -f deploy/raspberry/docker-compose.yml --env-file .env.db up -d --wait db",
     "db:down": "docker compose -f deploy/raspberry/docker-compose.yml --env-file .env.db down",
-    "docker:up": "docker compose -f deploy/raspberry/docker-compose.yml --env-file .env.db up -d --build --wait",
+    "docker:up": "docker compose -f deploy/raspberry/docker-compose.yml --env-file .env.db up -d --build --wait && node --env-file=.env.db scripts/indirizzo.mjs",
+    "indirizzo": "node scripts/indirizzo.mjs",
+    "sbanna": "docker compose -f deploy/raspberry/docker-compose.yml --env-file .env.db exec app node scripts/sbanna.mjs",
     "docker:logs": "docker compose -f deploy/raspberry/docker-compose.yml --env-file .env.db logs -f app",
     "db:migrate:dev": "node --env-file=.env.db scripts/db-migrate.mjs"
   },
